@@ -1,0 +1,35 @@
+:: Profile Location ::
+Win10 : %userprofile%\documents\my games\FINAL FANTASY XIV - A Realm Reborn
+MacOS : 
+
+:: Files ::
+Character - COMMON.DAT - Character Settings.
+Character - CONTROL0.DAT - Keyboard/Mouse Settings
+Character - CONTROL1.DAT - Gameplay Settings
+Character - ITEMFDR.DAT - unknown
+Character - ITEMODR.DAT - Inventory and Retainer item sort positions
+Character - LOGFLTR.DAT - Chat filters
+Character - UISAVE.DAT - timers such as the retainer venture timer, possibly other stuff
+
+Gearset - GEARSET.DAT - Saved gearsets
+
+HotbarLayout - HOTBAR.DAT - contents of your Hotbars, but not their positions or such
+HotbarLayout - MACRO.DAT - Custom macros
+
+Keybind - KEYBIND.DAT - Keybindings
+
+UiLayout - ADDON.DAT - UI settings such as HUD layouts and window sizes.
+
+Unused - ACQ.DAT - The list of recent tell contacts.
+
+
+:: References ::
+Configuration Backup - http://na.finalfantasyxiv.com/lodestone/playguide/win/config/
+Configuration Location - http://www.finalfantasyxiv.com/playersdownload/eu/
+DAT Files - http://pcgamingwiki.com/wiki/Final_Fantasy_XIV:_A_Realm_Reborn
+File Signatures - http://www.garykessler.net/library/file_sigs.html
+Hex and Bindings - https://www.reddit.com/r/razer/related/1b7agq/finally_found_a_way_to_bind_multimedia_keys_to/
+
+:: Scratchpad ::
+
+C:\Users\Alan\Documents\My Games\FINAL FANTASY XIV - A Realm Reborn\FFXIV_CHR00400000009D4722\ADDON.DAT
