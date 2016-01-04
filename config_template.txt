@@ -1,0 +1,29 @@
+AC : [Active Character Name]
+AP : [Active Profile Name]
+
+
+//  Template for character and profiles:
+C : [Character Name]
+P : [Profile Name]
+B : [Backup Timestamp (name of folder)]
+
+----
+
+{
+	"Active Character": "Feyen Aen",
+	"Active Profile": "MyProfile",
+	
+	"Characters": [
+		"Feyen Aen": [
+			"ID": "FFXIV_CHR00400000009D4722",
+			"MyProfile": [
+				"Backup1 Timestamp",
+				"Backup2 Timestamp"
+			]
+		],
+		
+		"Nuren Aen": [
+			"ID": "FFXIV_CHR00400000009A065B"
+		]
+	]
+}

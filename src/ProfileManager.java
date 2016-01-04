@@ -25,6 +25,9 @@ public class ProfileManager {
     //  for Mac OS.
     private static final String FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
     
+    //private static final String DATA_FILE_NAME = "config.dat";
+    private static final String DATA_FILE_NAME = "data.json";
+    
     //  Assumes that whatever is active in the user directory is the
     //  application's active profile.
     private static Profile activeProfile;
@@ -48,12 +51,20 @@ public class ProfileManager {
         backupActiveProfile();
     }
     
+    
+    /**
+    * Runs every time the app is opened.  Checks if there is a DATA_FILE_NAME
+    * file (first run condition), and if so, it asks the user to name their
+    * current profile.
+    * TODO: Need to make this ask for <b>ALL</b> characters' full names and
+    *       then identify each character's folder from the log files.
+    */
     private static void init() {
         System.out.println("Initializing app");
         
         File file = null;
         try {
-            file = new File("config.dat");
+            file = new File(DATA_FILE_NAME);
         } catch (Exception e) {
             System.out.println("Exception!");
         }
@@ -61,12 +72,12 @@ public class ProfileManager {
         String name;
         //  Check if this is first load:
         if (!file.exists()) {
-            System.out.println("config.dat does not exist.");
+            System.out.println(DATA_FILE_NAME + " does not exist.");
             name = chooseProfileName();
             
             initConfig(file, name);
         } else {
-            //  Grab name from the config.dat:
+            //  Grab name from the DATA_FILE_NAME:
             name = loadConfig(file);
         }
         
@@ -80,7 +91,7 @@ public class ProfileManager {
     //  Creates a new config file.
     private static void initConfig (File file, String name) {
         
-        System.out.println("Initializing config.dat");
+        System.out.println("Initializing " + DATA_FILE_NAME);
         
         try {
             FileOutputStream out = new FileOutputStream(file);
@@ -131,7 +142,7 @@ public class ProfileManager {
     
     private static String loadConfig(File file) {
         
-        System.out.println("Loading config.dat");
+        System.out.println("Loading " + DATA_FILE_NAME);
         
         Scanner scanner = null;
         
