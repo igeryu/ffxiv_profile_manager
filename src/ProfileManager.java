@@ -40,6 +40,9 @@ public class ProfileManager {
     
     public static void main(String[] args) {
         
+//        JSONTest.writeJSON();
+//        JSONTest.readJSON();
+        
         //  Change this from hard-coded to dynamic:
         activeCharacterName = "Feyen";
         activeCharacterID = "FFXIV_CHR00400000009D4722";
