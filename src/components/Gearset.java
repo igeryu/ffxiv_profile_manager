@@ -19,7 +19,7 @@ public class Gearset implements Component {
     
 //  addon.dat
     private final String DATA_FILENAME = "gearset.dat";
-    private String dataDirString;
+    private String dataDirectoryString;
     private File data;
     
     //  TODO:  Determine if the default constructor is needed.
@@ -31,7 +31,7 @@ public class Gearset implements Component {
     public Gearset(String cID, String dir) {
         this();
         
-        dataDirString = dir + cID + "\\" + DATA_FILENAME;
+        dataDirectoryString = dir + cID + "\\" + DATA_FILENAME;
         
         
     }
@@ -39,11 +39,11 @@ public class Gearset implements Component {
     
     //  TODO:  This should only be done when switching profiles, to backup the
     //         current (now previous) profile.
-    private boolean getData (String dataDirString) {
+    private boolean getData (String dataDirectoryString) {
         File file;
         
         try {
-            file = new File(dataDirString);
+            file = new File(dataDirectoryString);
             
             data = file;
             

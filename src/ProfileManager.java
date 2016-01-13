@@ -10,6 +10,7 @@ import java.util.Scanner;
 import javax.swing.JOptionPane;
 import util.Character;
 import static javax.swing.JOptionPane.QUESTION_MESSAGE;
+import util.TagManager;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -37,7 +38,10 @@ public class ProfileManager {
     private static String  activeCharacterID;
     
     //  TODO:  Need to fill this out.
-    private ArrayList<Character> characters;
+    private static ArrayList<Character> characters;
+    
+    //  TODO:  Consider making this a local class:
+    private static TagManager tagManager;
     
     
     public static void main(String[] args) {

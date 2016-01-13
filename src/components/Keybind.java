@@ -18,8 +18,8 @@ public class Keybind implements Component {
     private ArrayList <String> tags;
     
 //  addon.dat
-    private final String DATA_FILENAME = "keybind.dat";
-    private String dataDirString;
+    private final String DATA_FILENAME = "KEYBIND.dat";
+    private String dataDirectoryString;
     private File data;
     
     //  TODO:  Determine if the default constructor is needed.
@@ -31,7 +31,7 @@ public class Keybind implements Component {
     public Keybind(String cID, String dir) {
         this();
         
-        dataDirString = dir + cID + "\\" + DATA_FILENAME;
+        dataDirectoryString = dir + cID + "\\" + DATA_FILENAME;
         
         
     }
@@ -39,11 +39,11 @@ public class Keybind implements Component {
     
     //  TODO:  This should only be done when switching profiles, to backup the
     //         current (now previous) profile.
-    private boolean getData (String dataDirString) {
+    private boolean getData (String dataDirectoryString) {
         File file;
         
         try {
-            file = new File(dataDirString);
+            file = new File(dataDirectoryString);
             
             data = file;
             
