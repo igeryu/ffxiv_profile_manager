@@ -2,6 +2,9 @@
 import components.Profile;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -10,6 +13,8 @@ import java.util.Scanner;
 import javax.swing.JOptionPane;
 import util.Character;
 import static javax.swing.JOptionPane.QUESTION_MESSAGE;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import util.TagManager;
 
 /*
@@ -50,12 +55,14 @@ public class ProfileManager {
 //        JSONTest.readJSON();
         
         //  Change this from hard-coded to dynamic:
-        activeCharacterName = "Feyen";
-        activeCharacterID = "FFXIV_CHR00400000009D4722";
+        //activeCharacterName = "Feyen";
+        //activeCharacterID = "FFXIV_CHR00400000009D4722";
         
         init();
         
-        System.out.printf("Profile: %s\n", activeProfile.name);
+        
+        
+        //System.out.printf("Profile: %s\n", activeProfile.name);
         
         backupActiveProfile();
     }
@@ -107,6 +114,7 @@ public class ProfileManager {
     */
     private static void init() {
         System.out.println("Initializing app");
+        characters = new ArrayList<>();
         
         File file = null;
         try {
@@ -115,24 +123,18 @@ public class ProfileManager {
             System.out.println("Exception!");
         }
         
-        //  Check if this is first load:
-        if (!file.exists()) {
-            System.out.println(DATA_FILE_NAME + " does not exist.");
+        //  Check if any folders exist:
+        if (scanBackups()) {
             
-            initConfig(file);
-            if (!scanBackups()) {
-                System.out.println("Scanning of backups failed.");
-                return;
+            //  Check if this is first load:
+            if (file.exists()) {
+                loadConfig(file);
+            } else {
+                initConfig(file);
             }
-                
+            
         } else {
-            System.out.println(DATA_FILE_NAME + " exists.");
-            
-            if (!scanBackups()) {
-                System.out.println("Scanning of backups failed.");
-                return;
-            }
-            loadConfig(file);
+            System.out.println("Scanning of backups failed, or no backups exist.");
         }
         
         //  change "test" to the name received earlier
@@ -145,8 +147,10 @@ public class ProfileManager {
     // TODO:  Need to fix initConfig(File, String) so that it creates the correct JSON file structure.
      
     /**
-     * Runs during first-time setup.  Creates a new configuration file, who's
-     * name was previously determined by <code>DATA_FILE_NAME</code>.
+     * <p>Runs during first-time setup.  Creates a new configuration file, who's
+     * name was previously determined by <code>DATA_FILE_NAME</code>.</p>
+     * 
+     * <p>Parameters beginning with a '<code>@</code>' are place holders.</p>
      * 
      * @param file     Configuration file, whose name is determined by
      *                 <code>DATA_FILE_NAME</code>.
@@ -157,18 +161,55 @@ public class ProfileManager {
     private static void initConfig (File file) {
         
         System.out.println("Initializing " + DATA_FILE_NAME);
+        System.out.println("Writing JSON file...");
         
-        try {
-//            FileOutputStream out = new FileOutputStream(file);
-//            PrintWriter writer = new PrintWriter(out);
-//            writer.println(name);
-//            writer.flush();
-//            writer.close();
-//            out.close();
-        } catch (Exception e) {
-            System.out.println("initConfig() exception!");
+        //  Root
+        JSONObject rootJSON = new JSONObject();
+        rootJSON.put("Active Character", "@Not_Selected");
+        rootJSON.put("Active Profile", "@Not_Selected");
+        JSONObject charactersJSON = new JSONObject();
+        
+        //  TODO:  This is just to make it work, for now...
+        int increment = 0;
+        
+        for (Character character : characters) {
+            
+            System.out.println("\nCreating character in JSON (" + character.getId() + ")...");
+            
+            JSONObject characterJSON = new JSONObject();
+            characterJSON.put("ID", character.getId());
+            String name = character.getName() != null ? character.getName() : "@Unknown_" + increment++;
+            
+            //  TODO:  Implement this:
+            //characterJSON.put("Active Profile", character.getActiveProfile().name);
+            
+            /*
+            //  Add profiles/backups:
+            JSONArray profileJSON = new JSONArray();
+            profileJSON.add("Backup1 Timestamp");
+            profileJSON.add("Backup2 Timestamp");
+            characterJSON.put("MyProfile", myProfile);
+            */
+
+            charactersJSON.put(name, characterJSON);
+            
+            System.out.println("\nJSON Snapshot:\n" + charactersJSON);
+
         }
-    }
+        
+        rootJSON.put("Characters", charactersJSON);
+        
+
+        // try-with-resources statement based on post comment below :)
+        try (FileWriter fileWriter = new FileWriter(DATA_FILE_NAME)) {
+            fileWriter.write(rootJSON.toJSONString());
+            System.out.println("Successfully Copied JSON Object to File...");
+            System.out.println("\nJSON Object: " + rootJSON);
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getLocalizedMessage());
+        }
+        
+    }  //  end method initConfig()
 
     
     
@@ -253,7 +294,9 @@ public class ProfileManager {
      * <code>DATA_FILE_NAME</code>, into memory.
      * 
      * <p><code>scanBackups()</code> is assumed to have already run before this
-     * method runs.</p>
+     * method runs.  It then verifies that each character folder contained
+     * within is matched with a corresponding entry in
+     * <code>characters</code></p>
      * 
      * @param file     <code>File</code> object, whose name is determined by
      *                 <code>DATA_FILE_NAME</code>.
@@ -262,6 +305,8 @@ public class ProfileManager {
      */
     //private static String loadConfig(File file) {
     private static boolean loadConfig(File file) {
+        
+        //  TODO:  Iterate through character folders in 'FFXIV_FOLDER' and look for ones that are not identified in the 'characters' identifier.
         
         System.out.println("Loading " + DATA_FILE_NAME);
         
@@ -352,22 +397,48 @@ public class ProfileManager {
     /**
      * TODO:  Build this!
      * 
-     * Searches through the FFXIV folder, identified by
-     * <code>FFXIV_FOLDER</code>, and verifies that each character folder
-     * contained within is matched with a corresponding entry in
-     * <code>characters</code>.
+     * <p>Searches through the FFXIV folder, identified by
+     * <code>FFXIV_FOLDER</code>, and creates a <code>characters</code> object
+     * for each folder it finds.</p>
+     * 
+     * <p>For each character/folder it finds, it will call
+     * <code>Character.scanBackups()</code>.
      */
     private static boolean scanBackups () {
         
         /**
-         * TODO:  Iterate through character folders in 'FFXIV_FOLDER' and look for ones that are not identified in the 'characters' identifier.
+         * TODO:  Iterate through character folders in 'FFXIV_FOLDER' and create Character objects for each
          *        
          *        If there is at least one folder not identified, inform the
          *        user of the number ("Found # unidentified characters"), and
          *        then call chooseProfileName() that many times.
          */
         
-        return false;
+        File directory = new File(FFXIV_FOLDER);
+        File[] characterFolders = directory.listFiles(new FilenameFilter(){
+            public boolean accept (File dir, String name) {
+                return name.startsWith("FFXIV_CHR");
+            }
+        });
+        
+        if (characterFolders.length > 0) {
+            
+            System.out.println("\nFound " + characterFolders.length + " folders.");
+            
+            for (File folder : characterFolders) {
+                System.out.println("\nAdding character folder...");
+                String id = folder.getName();
+                Character newCharacter = new Character(id);
+                characters.add(newCharacter);
+                
+                if (!newCharacter.scanBackups())
+                    return false;
+            }
+            
+        } else
+            return false;
+        
+        return true;
     }
     
     
