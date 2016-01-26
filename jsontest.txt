@@ -1,0 +1,1 @@
+{"Active Profile":"MyProfile","Active Character":"Feyen Aen","Characters":{"Feyen Aen":{"MyProfile":["Backup1 Timestamp","Backup2 Timestamp"],"ID":"FFXIV_CHR00400000009D4722"}}}
