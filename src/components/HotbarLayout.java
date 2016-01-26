@@ -17,13 +17,12 @@ import java.util.ArrayList;
 public class HotbarLayout implements Component {
     private ArrayList <String> tags;
     
-    //  TODO:  Figure out best way to optimize these into a collection:
-    private final String DATA_FILENAME1 = "hotbar.dat";
-    private final String DATA_FILENAME2 = "macro.dat";
-    private String dataDirString1;
-    private String dataDirString2;
-    private File data1;
-    private File data2;
+    private final String[] DATA_FILENAMES = {
+        "HOTBAR.dat",
+        "MACRO.dat"
+    };
+    private String[] dataDirectoryStrings = new String[2];
+    private File[] data = new File[2];
     
     //  TODO:  Determine if the default constructor is needed.
     public HotbarLayout() {
@@ -34,8 +33,9 @@ public class HotbarLayout implements Component {
     public HotbarLayout(String cID, String dir) {
         this();
         
-        dataDirString1 = dir + cID + "\\" + DATA_FILENAME1;
-        dataDirString2 = dir + cID + "\\" + DATA_FILENAME2;
+        for (int i = 0; i < DATA_FILENAMES.length; i++) {
+            dataDirectoryStrings[i] = dir + cID + "\\" + DATA_FILENAMES[i];
+        }
         
     }
     
@@ -43,15 +43,12 @@ public class HotbarLayout implements Component {
     //  TODO:  This should only be done when switching profiles, to backup the
     //         current (now previous) profile.
     private boolean getData () {
-        File file1;
-        File file2;
         
         try {
-            file1 = new File(dataDirString1);
-            file2 = new File(dataDirString2);
             
-            data1 = file1;
-            data2 = file2;
+            for (int i = 0; i < DATA_FILENAMES.length; i++) {
+                data[i] = new File(dataDirectoryStrings[i]);
+            }
             
         } catch (Exception e) {
             System.out.println("HotbarLayout.getData() exception!");

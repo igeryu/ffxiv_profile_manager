@@ -23,6 +23,7 @@ public class Profile implements Component {
     private Gearset gearset;
     private HotbarLayout hotbarLayout;
     private Keybind keybind;
+    //  TODO: Add 'screenshot' property here
     private UiLayout uiLayout;
     
     

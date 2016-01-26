@@ -1,6 +1,9 @@
 /build/
 config.dat
 data.json
+jsontest.txt
+jsontest_old.txt
+test.xlsx
 ~$alysis.docx
 ~$quirements.docx
 ~WRL3668.tmp

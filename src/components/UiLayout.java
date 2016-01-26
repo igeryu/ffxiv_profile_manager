@@ -19,8 +19,8 @@ public class UiLayout implements Component {
     private ArrayList <String> tags;
     
 //  addon.dat
-    private final String DATA_FILENAME = "addon.dat";
-    private String dataDirString;
+    private final String DATA_FILENAME = "ADDON.dat";
+    private String dataDirectoryString;
     private File data;
     
     //  TODO:  Determine if the default constructor is needed.
@@ -32,7 +32,7 @@ public class UiLayout implements Component {
     public UiLayout(String cID, String dir) {
         this();
         
-        dataDirString = dir + cID + "\\" + DATA_FILENAME;
+        dataDirectoryString = dir + cID + "\\" + DATA_FILENAME;
         
         
     }
@@ -40,11 +40,11 @@ public class UiLayout implements Component {
     
     //  TODO:  This should only be done when switching profiles, to backup the
     //         current (now previous) profile.
-    private boolean getData (String dataDirString) {
+    private boolean getData (String dataDirectoryString) {
         File file;
         
         try {
-            file = new File(dataDirString);
+            file = new File(dataDirectoryString);
             
             data = file;
             

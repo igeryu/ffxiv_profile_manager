@@ -13,17 +13,18 @@ B : [Backup Timestamp (name of folder)]
 	"Active Character": "Feyen Aen",
 	"Active Profile": "MyProfile",
 	
-	"Characters": [
-		"Feyen Aen": [
+	"Characters": {
+		"Feyen Aen": {
 			"ID": "FFXIV_CHR00400000009D4722",
+			"Active Profile": "MyProfile",
 			"MyProfile": [
 				"Backup1 Timestamp",
 				"Backup2 Timestamp"
 			]
-		],
+		},
 		
-		"Nuren Aen": [
+		"Nuren Aen": {
 			"ID": "FFXIV_CHR00400000009A065B"
-		]
-	]
+		}
+	}
 }
