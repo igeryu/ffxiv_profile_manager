@@ -7,10 +7,13 @@ package util;
 
 import components.Profile;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -22,6 +25,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 
@@ -34,10 +38,35 @@ public class Character {
     private Profile activeProfile;
     private String name;
     private String id;
+    private boolean identified;
+    private ProfilesFrame profilesFrame;
+    private CharacterPanel characterPanel;
     
     public Character (String _id) {
         name = null;
         id = _id;
+        identified = false;
+        profilesFrame = new ProfilesFrame();
+    }
+    
+    
+    
+    /**
+     * 
+     * @return     identified variable
+     */
+    public boolean identified() {
+        return identified;
+    }
+    
+    
+    
+    /**
+     * 
+     * @param i    new value for <code>identified</code>
+     */
+    public void setIdentified(boolean i) {
+        identified = i;
     }
     
     /**
@@ -52,10 +81,30 @@ public class Character {
     
     /**
      * 
+     * @param n 
+     */
+    public void setName(String n) {
+        name = n;
+    }
+    
+    
+    
+    /**
+     * 
      * @return 
      */
     public Profile getActiveProfile() {
         return activeProfile;
+    }
+    
+    
+    
+    
+    public CharacterPanel getCharacterPanel() {
+        if (characterPanel == null)
+            characterPanel = new CharacterPanel(this);
+        
+        return characterPanel;
     }
     
     
@@ -113,6 +162,42 @@ public class Character {
     
     
     
+    
+    private class CharacterPanel extends JPanel {
+
+        private static final long serialVersionUID = 1L;
+        Character owner;
+        
+        /**
+         *
+         * @param o
+         */
+        public CharacterPanel(Character o) {
+            super();
+            if (o != null) {
+                owner = o;
+            }
+            FlowLayout layout = new FlowLayout();
+            setSize(100, 20);
+
+            setLayout(layout);
+            JLabel nameLabel = new JLabel(o.name);
+            nameLabel.getInsets().set(1, 1, 1, 1);
+            nameLabel.setPreferredSize(new Dimension(80, 15));
+            add(nameLabel);
+
+            
+        }  //  end CharacterPanel constructor
+
+        /**
+         *
+         * @param st
+         */
+        
+    }  //  end class CharacterPanel
+    
+    
+    
     private class ProfilesFrame extends JFrame {
         private static final long serialVersionUID = 1L;
         
@@ -144,7 +229,10 @@ public class Character {
             c.gridy = 1;
             c.gridwidth = 1;
             add(cancelButton, c);
-            
+
+            int width = 300; int height = 200;
+            setMinimumSize(new Dimension(width, height));
+            setVisible(false);
 
         }  //  end GameFrame constructor
         

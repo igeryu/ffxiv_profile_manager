@@ -1,5 +1,9 @@
 
 import components.Profile;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -10,9 +14,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Scanner;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import util.Character;
 import static javax.swing.JOptionPane.QUESTION_MESSAGE;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import util.TagManager;
@@ -44,6 +55,9 @@ public class ProfileManager {
     
     //  TODO:  Need to fill this out.
     private static ArrayList<Character> characters;
+    //private static ArrayList<Character> unidentifiedCharacters;
+    private static boolean unidentifiedCharacters;
+    private static UnidentifiedCharactersFrame unidentifiedCharactersFrame;
     
     //  TODO:  Consider making this a local class:
     private static TagManager tagManager;
@@ -78,6 +92,39 @@ public class ProfileManager {
         //  TODO:  Fill this in!
         return null;
     }
+    
+    
+    
+    /**
+     * <p>Lists identified characters, and asks the user to give a name of a yet
+     * to be identified character.</p>
+     * 
+     * <p> Then searches the folder of each <code>Character</code> object whose
+     * <code>identified</code> flag is <code>false</code>, until one is
+     * identified as being correct, none are found (error).</p>
+     * 
+     * <p>OLD:  Then searches the folder of each entry in
+     * <code>unidentifiedCharacters</code> until one is identified as being
+     * correct, or none are found (error).</p>
+     */
+    private static void identifyCharacter () {
+        
+        System.out.println("\nIdentifying Character...");
+        
+        //unidentifiedCharactersFrame = new UnidentifiedCharactersFrame();
+        
+        String unidentifiedCharacterNames = "Identified Characters:\n";
+        
+        for (Character character : characters) {
+            if (character.identified()) {
+                System.out.println("\nAdding identified character name to list...");
+                unidentifiedCharacterNames += character.getName() + "\n";
+            }  //  if character is identified
+        }  // for each character in characters
+        
+        String nameInput = JOptionPane.showInputDialog(null, unidentifiedCharacterNames, "Identify New Character", QUESTION_MESSAGE);
+        
+    }  //  end method identifyCharacter()
     
     
     
@@ -125,7 +172,7 @@ public class ProfileManager {
         
         //  Check if any folders exist:
         if (scanBackups()) {
-            
+            //characters.get(0);
             //  Check if this is first load:
             if (file.exists()) {
                 loadConfig(file);
@@ -160,6 +207,24 @@ public class ProfileManager {
     //private static void initConfig (File file, String name) {
     private static void initConfig (File file) {
         
+        System.out.println("\nInitializing configuration settings...");
+        
+        //  DEBUG:
+        characters.get(0).setIdentified(true);
+        characters.get(0).setName("Test Name");
+        
+        if (verifyScannedBackups() > 0) {
+            //OLD: while (unidentifiedCharacters.size() > 0) {
+            while (unidentifiedCharacters) {
+                
+                identifyCharacter();
+                
+            }  //  while unidentifiedCharacters (has objects within)
+            
+        }  //  if there is at least one unverified character
+        
+        //  =================================================================
+        
         System.out.println("Initializing " + DATA_FILE_NAME);
         System.out.println("Writing JSON file...");
         
@@ -174,7 +239,7 @@ public class ProfileManager {
         
         for (Character character : characters) {
             
-            System.out.println("\nCreating character in JSON (" + character.getId() + ")...");
+            //System.out.println("\nCreating character in JSON (" + character.getId() + ")...");
             
             JSONObject characterJSON = new JSONObject();
             characterJSON.put("ID", character.getId());
@@ -193,7 +258,7 @@ public class ProfileManager {
 
             charactersJSON.put(name, characterJSON);
             
-            System.out.println("\nJSON Snapshot:\n" + charactersJSON);
+            //System.out.println("\nJSON Snapshot:\n" + charactersJSON);
 
         }
         
@@ -406,12 +471,17 @@ public class ProfileManager {
      */
     private static boolean scanBackups () {
         
+        System.out.println("\nScanning backups...");
+        
         /**
          * TODO:  Iterate through character folders in 'FFXIV_FOLDER' and create Character objects for each
-         *        
-         *        If there is at least one folder not identified, inform the
-         *        user of the number ("Found # unidentified characters"), and
-         *        then call chooseProfileName() that many times.
+         * 
+         * <p>Iterates through each folder in <code>FFXIV_FOLDER</code> and add
+         * each one that matches the "<code>FFXIV_CHR...</code>" pattern.</p>
+         * 
+         *<p>OLD: If there is at least one folder not identified, inform the
+         * user of the number ("Found # unidentified characters"), and then call
+         * chooseProfileName() that many times.</p>
          */
         
         File directory = new File(FFXIV_FOLDER);
@@ -426,7 +496,7 @@ public class ProfileManager {
             System.out.println("\nFound " + characterFolders.length + " folders.");
             
             for (File folder : characterFolders) {
-                System.out.println("\nAdding character folder...");
+                //System.out.println("\nAdding character folder...");
                 String id = folder.getName();
                 Character newCharacter = new Character(id);
                 characters.add(newCharacter);
@@ -439,7 +509,129 @@ public class ProfileManager {
             return false;
         
         return true;
-    }
+    }  //  end method scanBackups()
     
     
-}
+    
+    /**
+     * TODO:  Likely should rename this so that the return value makes more sense.
+     * 
+     * <p>Should probably be depreciated/removed...</p>
+     * 
+     * <p>After <code>scanBackups()</code> has been run at least once, this
+     * checks each <code>Character</code> object in the <code>characters</code>
+     * identifiedCharactersList for a <code>null</code> name.  Each time one is found, it is
+     * added to <code>unidentifiedCharacters</code>.</p>
+     * 
+     * <p>OLD:  After <code>scanBackups()</code> has been run at least once, this
+     * checks each <code>Character</code> object in the <code>characters</code>
+     * identifiedCharactersList for a <code>null</code> name.  Each time one is found, it is
+     * added to <code>unidentifiedCharacters</code>.</p>
+     * 
+     * <p><code>Character</code> objects with having name indicate that they
+     * have not been identified by the user.</p>
+     * 
+     * <p>Returns the number of unidentified characters found.</p>
+     * 
+     * @return     Number of unidentified characters found.
+     */
+    private static int verifyScannedBackups() {
+        System.out.println("\nVerifying scanned backups...");
+        int found = 0;
+        //unidentifiedCharacters = new ArrayList<>();
+        
+        for (Character character : characters) {
+            //if (character.getName() == null) {
+            if (!character.identified()) {
+                //unidentifiedCharacters.add(character);
+                found++;
+            }  // if the character has no name (hasn't been identified)
+        }  //  for each character in characters
+        
+        unidentifiedCharacters = found > 0 ? true : false;
+        return found;
+        
+    }  //  end method verifiyScannedBackups()
+    
+    
+    
+    private static class UnidentifiedCharactersFrame extends JFrame {
+        
+        public UnidentifiedCharactersFrame () {
+            super();
+
+            this.setTitle("Identify New Character");
+
+            //             -----  Header -----
+
+            add(new JLabel("Profiles"));
+            setLayout(new GridBagLayout());
+            GridBagConstraints c = new GridBagConstraints();
+
+            //  TODO:  Make this into a JTree (for Profiles and past backups)
+            JScrollPane scrollPane = new JScrollPane();
+            c.gridx = 0;
+            c.gridy = 0;
+            c.gridwidth = 3;
+            add(scrollPane, c);
+            
+            JButton loadButton = new JButton("Load");
+            c.gridx = 0;
+            c.gridy = 1;
+            c.gridwidth = 1;
+            add(loadButton, c);
+            
+            JButton cancelButton = new JButton("Cancel");
+            c.gridx = 2;
+            c.gridy = 1;
+            c.gridwidth = 1;
+            add(cancelButton, c);
+
+            int width = 300; int height = 500;
+            setMinimumSize(new Dimension(width, height));
+            setVisible(true);
+
+        }  //  end UnidentifiedCharactersFrame constructor
+        
+        private JScrollPane buildIdentifiedCharacterList() {
+            
+            //Get a identifiedCharactersList of identified characters:
+            ArrayList<JPanel> identifiedCharacterPanels = new ArrayList<>();
+            for (Character character : characters) {
+                if (character.identified())
+                    identifiedCharacterPanels.add(character.getCharacterPanel());
+            }
+            
+            JList<JPanel> identifiedCharactersList = new JList<JPanel>() {
+                private static final long serialVersionUID = 1L;
+                @Override public Dimension getPreferredSize() {
+                    int width = 250;
+                    int rows = identifiedCharacterPanels.size();
+                    int height = 5 * rows;
+                    return new Dimension(width, height);
+                }
+            };
+            
+            for (JPanel panel : identifiedCharacterPanels) {
+                identifiedCharactersList.add(panel);
+            }
+            
+            identifiedCharactersList.setLayout(new FlowLayout());
+            identifiedCharactersList.setLayoutOrientation(JList.VERTICAL);
+            
+            JScrollPane pane = new JScrollPane(identifiedCharactersList);
+            pane.getVerticalScrollBar().setUnitIncrement(100);
+            pane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS);
+            
+            identifiedCharactersList.validate();
+            pane.validate();
+            
+            setVisible(true);
+            
+            return pane;
+            
+        }
+        
+    }  //  end class UnidentifiedCharactersFrame
+    
+}  //  end class ProfileManager
