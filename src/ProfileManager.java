@@ -10,10 +10,14 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -117,12 +121,16 @@ public class ProfileManager {
         
         for (Character character : characters) {
             if (character.identified()) {
-                System.out.println("\nAdding identified character name to list...");
+                //DEBUG:
+                //System.out.printf("\nAdding identified character name (%s) to list...\n", character.getName());
                 unidentifiedCharacterNames += character.getName() + "\n";
             }  //  if character is identified
         }  // for each character in characters
         
+        //  TODO:  identifyCharacter() : need to ensure player enters character full name
         String nameInput = JOptionPane.showInputDialog(null, unidentifiedCharacterNames, "Identify New Character", QUESTION_MESSAGE);
+        
+        identifyCharacterFolder(nameInput);
         
     }  //  end method identifyCharacter()
     
@@ -140,13 +148,30 @@ public class ProfileManager {
         /**
          * 1. Verify that the character is not already identified.  Return false
          *    if the character is already verified.
+         * 
+         * NOTE:  Currently commented out because I have two characters with the same name on different servers.
+         * TODO:  Figure out how to make this work for two like-named characters.
          */
+//        for (Character character : characters) {
+//            if (character.getName() != null && character.getName().equals(name)) {
+//                System.out.println("\nCharacter " + name + " already identified...");
+//                return false;
+//            }
+//        }
         
         // TODO:  Add support for multiple characters of same name, but different servers.
         
         //  2. Locate folder by character name.  If successful, create a new
         //     Character object, call identifyProfiles() on it and add it to
         //     characers ArrayList, then return true.
+        //  TODO: Situation where a list of unidentified characters would be more efficient:
+        for (Character character : characters) {
+            if (!character.identified() && searchCharacterFolder(character, name)) {
+                //DEBUG:
+                //System.out.println("\nCharacter " + name + " found!");
+                return true;
+            }
+        }
         
         return false;
     }
@@ -210,14 +235,17 @@ public class ProfileManager {
         System.out.println("\nInitializing configuration settings...");
         
         //  DEBUG:
-        characters.get(0).setIdentified(true);
-        characters.get(0).setName("Test Name");
+        //characters.get(0).setIdentified(true);
+        //characters.get(0).setName("Test Name");
         
         if (verifyScannedBackups() > 0) {
             //OLD: while (unidentifiedCharacters.size() > 0) {
             while (unidentifiedCharacters) {
                 
                 identifyCharacter();
+                
+                //  This is to ensure that unidentifiedCharacters is still valid:
+                verifyScannedBackups();
                 
             }  //  while unidentifiedCharacters (has objects within)
             
@@ -510,6 +538,55 @@ public class ProfileManager {
         
         return true;
     }  //  end method scanBackups()
+    
+    
+    
+    
+    private static boolean searchCharacterFolder (Character character, String name) {
+        //  TODO:  Build searchCharacterFolder()
+        String characterLogDirectoryString = FFXIV_FOLDER + "\\" + character.getId() + "\\log\\";
+        File characterLogDirectory = new File(characterLogDirectoryString);
+        
+        File[] logFiles = characterLogDirectory.listFiles(new FilenameFilter(){
+            public boolean accept (File dir, String name) {
+                return name.endsWith("log");
+            }
+        });
+        
+        if (logFiles != null && logFiles.length > 0) {
+            
+            //DEBUG:
+            //System.out.printf("\n(%s) Found %d log files.\n", character.getId(), logFiles.length);
+
+            for (File file : logFiles) {
+                //  DEBUG:
+                //System.out.printf("\n(%s) Searching through file (%s)...\n", character.getId(), file.getName());
+                try {
+                    
+                    byte[] encoded = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+                    String fileContents = new String(encoded, StandardCharsets.US_ASCII);
+
+                    if (Pattern.compile(Pattern.quote(name), Pattern.CASE_INSENSITIVE).matcher(fileContents).find()) {
+                            System.out.println("Log file found.  Identified character " + name + ".");
+                            character.setName(name);
+                            character.setIdentified(true);
+                            return true;
+                        }
+                    
+                } catch (Exception e) {
+                    System.out.printf("\n(%s) Exception...\n", character.getId());
+                }
+            }
+            
+        } else {
+            System.out.printf("\n(%s)No log files found.\n", character.getId());
+        }
+
+        //DEBUG:
+        //System.out.printf("\n(%s) String not found in log file...\n", character.getId());
+
+        return false;
+    }
     
     
     
