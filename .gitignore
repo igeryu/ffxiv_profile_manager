@@ -1,4 +1,6 @@
 /build/
+/nbproject/
+.DS_Store
 config.dat
 data.json
 jsontest.txt

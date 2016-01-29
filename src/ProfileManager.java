@@ -5,11 +5,9 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,7 +26,6 @@ import static javax.swing.JOptionPane.QUESTION_MESSAGE;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import util.TagManager;
 
@@ -45,7 +42,11 @@ public class ProfileManager {
     
     //  Change this to be not only change able for non-default installs, but also
     //  for Mac OS.
-    private static final String FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
+    //  Moved to main()
+    //private static final String FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
+    private static String FFXIV_FOLDER;
+    //  TODO: determine if folderDivider is needed:
+    private static String FOLDER_DIVIDER;
     
     //private static final String DATA_FILE_NAME = "config.dat";
     private static final String DATA_FILE_NAME = "data.json";
@@ -75,6 +76,17 @@ public class ProfileManager {
         //  Change this from hard-coded to dynamic:
         //activeCharacterName = "Feyen";
         //activeCharacterID = "FFXIV_CHR00400000009D4722";
+        
+        if (System.getProperty("os.name").equals("Mac OS X")) {
+            FFXIV_FOLDER = "/users/alanjohnson/documents/Final Fantasy XIV - A Realm Reborn/";
+            FOLDER_DIVIDER = "/";
+        }
+        else {
+            FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
+            FOLDER_DIVIDER = "\\";
+        }
+        
+        System.out.println("\nRunning on " + System.getProperty("os.name"));
         
         init();
         
@@ -144,6 +156,8 @@ public class ProfileManager {
      * @return 
      */
     private static boolean identifyCharacterFolder (String name) {
+        
+        System.out.printf("\nLocating character: \"%s\"\n", name);
         
         /**
          * 1. Verify that the character is not already identified.  Return false
@@ -544,7 +558,7 @@ public class ProfileManager {
     
     private static boolean searchCharacterFolder (Character character, String name) {
         //  TODO:  Build searchCharacterFolder()
-        String characterLogDirectoryString = FFXIV_FOLDER + "\\" + character.getId() + "\\log\\";
+        String characterLogDirectoryString = FFXIV_FOLDER + FOLDER_DIVIDER + character.getId() + FOLDER_DIVIDER + "log" + FOLDER_DIVIDER;
         File characterLogDirectory = new File(characterLogDirectoryString);
         
         File[] logFiles = characterLogDirectory.listFiles(new FilenameFilter(){
