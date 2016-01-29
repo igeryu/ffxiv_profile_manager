@@ -15,4 +15,9 @@ import java.util.Date;
 public class Backup {
     private Date date;
     private Profile profile;
+    
+    public Backup (Date _date, Profile _profile) {
+        date = _date;
+        profile = _profile;
+    }
 }

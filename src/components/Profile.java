@@ -38,6 +38,17 @@ public class Profile implements Component {
         loadProfileData();
     }
     
+    //  TODO:  Determine if 'dir' should become a File held in ProfileManager,
+    //         or remain just a String argument passed to Profile class...
+    public Profile (String n, String cName, String cID, String dir, ArrayList<String> backupNames) {
+        name = n;
+        characterName = cName;
+        characterID = cID;
+        directory = dir + cID;
+        
+        loadProfileData();
+    }
+    
     private boolean loadProfileData () {
         gearset      = new Gearset(characterID, directory);
         hotbarLayout = new HotbarLayout(characterID, directory);

@@ -34,7 +34,7 @@ import javax.swing.JScrollPane;
  * @author Alan
  */
 public class Character {
-    private HashMap <String, ArrayList<Backup>> profileBackups;
+    private ArrayList <Profile> profiles;
     private Profile activeProfile;
     private String name;
     private String id;
@@ -47,6 +47,23 @@ public class Character {
         id = _id;
         identified = false;
         profilesFrame = new ProfilesFrame();
+        profiles = new ArrayList<>();
+    }
+    
+    
+    
+    public Character (String _name, String _id) {
+        name = _name;
+        id = _id;
+        identified = true;
+        profilesFrame = new ProfilesFrame();
+        profiles = new ArrayList<>();
+    }
+    
+    
+    
+    public void addProfile (Profile p) {
+        profiles.add(p);
     }
     
     
@@ -75,6 +92,12 @@ public class Character {
      */
     public String getName() {
         return name;
+    }
+    
+    
+    
+    public ArrayList<Profile> getProfiles() {
+        return profiles;
     }
     
     

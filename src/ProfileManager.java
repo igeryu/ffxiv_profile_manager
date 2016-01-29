@@ -3,6 +3,11 @@
  * 2016-01-29 : Added support for working on Mac OS X.
  * 2016-01-29 : Refactored backupActiveProfile(), 
  * 2016-01-29 : Removed chooseProfileName(), not needed.
+ * 
+ * 2016-01-29 : Added activeProfileName.
+ * 2016-01-29 : Updated logic for defining FFXIV_FOLDER, for Windows user path.
+ * 2016-01-29 : Added addCharacter() method, to prevent duplication of Character objects created by scanBackups()
+ * 2016-01-29 : Add much more to loadConfig(); now it reads the JSON file and creates appropriate Character/Profile/Backup objects
  */
 
 /**
@@ -15,6 +20,7 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -24,7 +30,11 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,7 +46,9 @@ import static javax.swing.JOptionPane.QUESTION_MESSAGE;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import util.TagManager;
 
 /*
@@ -61,6 +73,7 @@ public class ProfileManager {
     //  Assumes that whatever is active in the user directory is the
     //  application's active profile.
     private static Profile activeProfile;
+    private static String activeProfileName;
     private static Character activeCharacter;
     private static String  activeCharacterName;
     private static String  activeCharacterID;
@@ -85,7 +98,7 @@ public class ProfileManager {
             FOLDER_DIVIDER = "/";
         }
         else {
-            FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
+            FFXIV_FOLDER = System.getProperty("user.home") + "\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
             FOLDER_DIVIDER = "\\";
         }
         
@@ -95,6 +108,24 @@ public class ProfileManager {
         
         backupActiveProfile();
     }
+    
+    
+    
+    /**
+     * <p>Checks if a similar character (same folder ID) has already been added.
+     * If so, this combines the data by copying it to the existing character.</p>
+     * @param c 
+     */
+    private static void addCharacter(Character c) {
+        for (Character character : characters) {
+            if (character.getId().equals(c.getId())) {
+                character.setName(c.getName());
+                character.setIdentified(true);
+            }
+        }
+    }
+    
+    
     
     /**
      * <p>TODO:  Need to add functionality to honor user's inclusion/exclusion choices (include gearsets, exclude keybinds, etc.) from the profile and ergo the backup.</p>
@@ -280,6 +311,7 @@ public class ProfileManager {
             
         } else {
             System.out.println("Scanning of backups failed, or no backups exist.");
+            return;
         }
         
         //  change "test" to the name received earlier
@@ -299,8 +331,6 @@ public class ProfileManager {
      * 
      * @param file     Configuration file, whose name is determined by
      *                 <code>DATA_FILE_NAME</code>.
-     * 
-     * @param name     Name of active profile, need to fix this.
      */
     //private static void initConfig (File file, String name) {
     private static void initConfig (File file) {
@@ -320,6 +350,11 @@ public class ProfileManager {
             
         }  //  if there is at least one unverified character
         
+        else {
+            System.out.println("\nNo character folders found.");
+            return;
+        }
+        
         //  =================================================================
         
         System.out.println("Initializing " + DATA_FILE_NAME);
@@ -329,7 +364,7 @@ public class ProfileManager {
         JSONObject rootJSON = new JSONObject();
         rootJSON.put("Active Character", "@Not_Selected");
         rootJSON.put("Active Profile", "@Not_Selected");
-        JSONObject charactersJSON = new JSONObject();
+        JSONObject charactersRootJSON = new JSONObject();
         
         //  TODO:  This is just to make it work, for now...
         int increment = 0;
@@ -351,13 +386,13 @@ public class ProfileManager {
             characterJSON.put("MyProfile", myProfile);
             */
 
-            charactersJSON.put(name, characterJSON);
+            charactersRootJSON.put(name, characterJSON);
             
-            //System.out.println("\nJSON Snapshot:\n" + charactersJSON);
+            //System.out.println("\nJSON Snapshot:\n" + charactersRootJSON);
 
         }
         
-        rootJSON.put("Characters", charactersJSON);
+        rootJSON.put("Characters", charactersRootJSON);
         
 
         // try-with-resources statement based on post comment below :)
@@ -403,23 +438,88 @@ public class ProfileManager {
             return false;
         }
         
-        if (scanner.hasNextLine()) {
-            //return scanner.next();
-            return true;
+        System.out.println("Reading JSON file...");
+        
+        JSONParser parser = new JSONParser();
+        
+        try {
+ 
+            Object obj = parser.parse(new FileReader(
+                    DATA_FILE_NAME));
+ 
+            JSONObject rootJsonObject = (JSONObject) obj;
+            
+            activeProfileName = (String) rootJsonObject.get("Active Profile");
+            activeCharacterName = (String) rootJsonObject.get("Active Character");
+            
+            JSONObject charactersRootJSON = (JSONObject) rootJsonObject.get("Characters");
+            
+            ArrayList<JSONObject> charactersJSON = new ArrayList<>();
+            Set<Entry<String, Object>> characterSets = charactersRootJSON.entrySet();
+            
+            // Map.Entry<Integer, GameElement> e : allElements.entrySet()
+            for (Map.Entry<String, Object> characterEntry : characterSets) {
+                //  DEBUG:
+                System.out.printf("\nnewCharacterName = \"%s\"", characterEntry.getKey());
+                
+                String newCharacterName = characterEntry.getKey();
+                JSONObject newCharacterJSON = (JSONObject) characterEntry.getValue();
+                String newCharacterId = (String) newCharacterJSON.get("ID");
+                Character newCharacter = new Character(newCharacterName, newCharacterId);
+                
+                ArrayList<Profile> profiles = new ArrayList<>();
+                Set<Entry<String, Object>> profileSets = newCharacterJSON.entrySet();
+                for (Map.Entry<String, Object> profileEntry : profileSets) {
+                    //  TODO: Refactor this if into something more streamlined:
+                    if (profileEntry.getKey().equals("ID") || profileEntry.getKey().equals("Active Profile"))
+                        continue;
+                    
+                    String newProfileName = profileEntry.getKey();
+                    JSONArray newProfileArray = (JSONArray) profileEntry.getValue();
+                    
+                    ArrayList<String> backups = new ArrayList<>();
+                    Iterator<?> profileIterator = newProfileArray.iterator();
+                    while (profileIterator.hasNext()) {
+                        backups.add((String) profileIterator.next());
+                    }  // collect backup names
+                    
+                    Profile newProfile = new Profile(newProfileName, newCharacterName, newCharacterId, FFXIV_FOLDER, backups);
+                    newCharacter.addProfile(newProfile);
+                    
+                }  //  iterate through all profiles
+                
+                addCharacter(newCharacter);
+                
+                //  DEBUG:
+                System.out.printf("\nnewCharacter.getName() = \"%s\"", newCharacter.getName());
+            }  //  iterate through characters
+            
+            
+            
+            //   DEBUG:  Display Results:
+            System.out.println("\n\nActive Profile: " + activeProfileName);
+            System.out.println("Active Character: " + activeCharacterName);
+            System.out.println("\nCharacters:");
+            
+            for (Character character : characters) {
+                System.out.println("    " + character.getName() + ":");
+                System.out.println("        ID: " + character.getId());
+                
+                System.out.println("\n        Profiles:");
+                for (Profile profile : character.getProfiles()) {
+                    System.out.println("            " + profile.name);
+                    //  TODO: print out profile backups
+                    
+                }  // iterate through profiles
+                
+            }  // iterate through characters
+ 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
         
-        String name = "";
-        //  TODO:  Store the active character name from the config file into 'name'.
-        
-        //  NOTE:  activeCharacterName and activeCharacterID must be known for
-        //         getActiveProfile() to succeed.
-        activeCharacterName = name;
-        activeCharacter = getCharacter(name);
-        activeCharacterID = activeCharacter.getId();
-        activeProfile = getActiveProfile(name);
-        
-        
-        return false;
+        return true;
     }
     
     
