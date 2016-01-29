@@ -1,6 +1,9 @@
 /build/
-/nbproject/
+/nbproject/build-impl.xml
+/nbproject/genfiles.properties
+/nbproject/private/*
 .DS_Store
+build.xml
 config.dat
 data.json
 jsontest.txt

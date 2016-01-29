@@ -1,3 +1,13 @@
+/**
+ * Changelog:
+ * 2016-01-29 : Added support for working on Mac OS X.
+ * 2016-01-29 : Refactored backupActiveProfile(), 
+ * 2016-01-29 : Removed chooseProfileName(), not needed.
+ */
+
+/**
+ * TODO: (2016-01-29) Add way to manage all characters at once, rather than one active character (perhaps using tabs)
+ */
 
 import components.Profile;
 import java.awt.Dimension;
@@ -40,15 +50,12 @@ import util.TagManager;
  */
 public class ProfileManager {
     
-    //  Change this to be not only change able for non-default installs, but also
-    //  for Mac OS.
     //  Moved to main()
     //private static final String FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
     private static String FFXIV_FOLDER;
     //  TODO: determine if folderDivider is needed:
     private static String FOLDER_DIVIDER;
     
-    //private static final String DATA_FILE_NAME = "config.dat";
     private static final String DATA_FILE_NAME = "data.json";
     
     //  Assumes that whatever is active in the user directory is the
@@ -69,16 +76,12 @@ public class ProfileManager {
     
     
     public static void main(String[] args) {
-        
-//        JSONTest.writeJSON();
-//        JSONTest.readJSON();
-        
         //  Change this from hard-coded to dynamic:
         //activeCharacterName = "Feyen";
         //activeCharacterID = "FFXIV_CHR00400000009D4722";
         
         if (System.getProperty("os.name").equals("Mac OS X")) {
-            FFXIV_FOLDER = "/users/alanjohnson/documents/Final Fantasy XIV - A Realm Reborn/";
+            FFXIV_FOLDER = System.getProperty("user.home") + "/documents/Final Fantasy XIV - A Realm Reborn/";
             FOLDER_DIVIDER = "/";
         }
         else {
@@ -90,22 +93,78 @@ public class ProfileManager {
         
         init();
         
-        
-        
-        //System.out.printf("Profile: %s\n", activeProfile.name);
-        
         backupActiveProfile();
+    }
+    
+    /**
+     * <p>TODO:  Need to add functionality to honor user's inclusion/exclusion choices (include gearsets, exclude keybinds, etc.) from the profile and ergo the backup.</p>
+     * 
+     * <p>Backs up the active profile stored in <code>activeProfile</code>.  It
+     * does this by creating a folder following the
+     * "<code>yyyy-MM-dd-HH-mm</code>" format for dates and appends
+     * <code>activeCharacterName</code>, <code>activeProfile.name</code> and
+     * then "<code>Backup</code>".  Inside that folder, all selected components
+     * are copied from the active directory.</p>
+     * 
+     * @return <code>true</code> if the backup was successful,
+     *         <code>false</code> otherwise.
+     */
+    private static boolean backupActiveProfile () {
+        
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
+        String timestamp = dateFormat.format(cal.getTime());
+        
+        System.out.println("Timestamp: " + timestamp);
+        
+        String backupName = timestamp + " " + activeCharacterName
+                                      + " " + activeProfile.name + " Backup";
+        
+        //  TODO: backupActiveProfile() ~ Create backup of components within folder.
+        
+        System.out.println("Backup Name: " + backupName);
+        
+        return true;
     }
     
     
     
     /**
+     * This runs during application startup, to initialize a
+     * <code>Profile</code> object from the parameters of the last active
+     * profile in the file identified by <code>DATA_FILE_NAME</code>.
      * 
+     * TODO:  Add functionality to handle multiple characters by ID
+     * 
+     * @param name     The name of the last active profile, from
+     *                 <code>DATA_FILE_NAME</code>.
+     * 
+     * @return         <code>Profile</code> object corresponding to the last
+     *                 (and current) active profile
+     */
+    private static Profile getActiveProfile(String name) {
+        
+        System.out.println("Getting active profile from name");
+        
+        // TODO:  Make sure that activeCharacterName and activeCharacterID really will be set at this point, not just because they are hard-coded in main().
+        
+        return new Profile(name, activeCharacterName,
+                           activeCharacterID, FFXIV_FOLDER + FOLDER_DIVIDER);
+    }
+
+    
+    
+    /**
+     * TODO:  Need to implement code for multiple characters of same name (different server)
      * @param name
      * @return 
      */
     private static Character getCharacter (String name) {
-        //  TODO:  Fill this in!
+        for (Character character : characters) {
+            if (character.getName().equals(name)) {
+                return character;
+            }
+        }
         return null;
     }
     
@@ -248,10 +307,6 @@ public class ProfileManager {
         
         System.out.println("\nInitializing configuration settings...");
         
-        //  DEBUG:
-        //characters.get(0).setIdentified(true);
-        //characters.get(0).setName("Test Name");
-        
         if (verifyScannedBackups() > 0) {
             //OLD: while (unidentifiedCharacters.size() > 0) {
             while (unidentifiedCharacters) {
@@ -280,8 +335,6 @@ public class ProfileManager {
         int increment = 0;
         
         for (Character character : characters) {
-            
-            //System.out.println("\nCreating character in JSON (" + character.getId() + ")...");
             
             JSONObject characterJSON = new JSONObject();
             characterJSON.put("ID", character.getId());
@@ -317,82 +370,6 @@ public class ProfileManager {
         }
         
     }  //  end method initConfig()
-
-    
-    
-    /**
-     * This runs during application startup, to initialize a
-     * <code>Profile</code> object from the parameters of the last active
-     * profile in the file identified by <code>DATA_FILE_NAME</code>.
-     * 
-     * TODO:  Add functionality to handle multiple characters by ID
-     * 
-     * @param name     The name of the last active profile, from
-     *                 <code>DATA_FILE_NAME</code>.
-     * 
-     * @return         <code>Profile</code> object corresponding to the last
-     *                 (and current) active profile
-     */
-    private static Profile getActiveProfile(String name) {
-        
-        System.out.println("Getting active profile from name");
-        
-        // TODO:  Make sure that activeCharacterName and activeCharacterID really will be set at this point, not just because they are hard-coded in main().
-        
-        return new Profile(name, activeCharacterName,
-                           activeCharacterID, FFXIV_FOLDER);
-    }
-    
-    
-    
-    /**
-     * Runs when unidentified character folders are found by
-     * <code>scanBackups()</code>.  Asks the user to name any character that is
-     * not identified by the application yet (whether this is first-time setup
-     * or later), and then the application will attempt to find the folder
-     * belonging to that character.
-     * 
-     * @param setup     Currently depreciated.
-     * @param id        Currently depreciated.
-     * 
-     * @return          the name of the profile, chosen by the user
-     */
-    //private static boolean chooseProfileName(boolean setup, String id) {
-    private static boolean chooseProfileName() {
-        
-        //  From depreciated setup param:
-        //System.out.println("Getting profile name. (" + (setup ? "first-time setup" : "new profile") + ")");
-        
-//        String name = "";
-//        String prompt = "";
-//        String promptTitle = "";
-        
-        //  From depreciated setup param:
-//        if (setup) {
-//            prompt = "Please provide a name for your current profile.";
-//            promptTitle = "First-Time Setup";
-//        } else {
-//            prompt = "New character found "
-//        }
-        
-        System.out.println("Getting profile name.");
-        String name = "";
-        String prompt = "Unidentified character found.\nPlease enter a name for"
-                      + " any new character.";
-        String promptTitle = "Unidentified Character";
-        
-        do {
-
-            name = JOptionPane.showInputDialog(null, prompt,
-                                               promptTitle, QUESTION_MESSAGE);
-
-        } while (name.equals(""));
-                
-        System.out.println("\nLocating profile: " + name);
-        
-        return identifyCharacterFolder(name);
-
-    }  // end chooseProfileName() method
     
     
     
@@ -447,36 +424,6 @@ public class ProfileManager {
     
     
     
-    //  @TODO:  Need to add functionality to honor user's inclusion/exclusion choices (include gearsets, exclude keybinds, etc.) from the profile and ergo the backup.
-    
-    /**
-     * Backs up the active profile stored in <code>activeProfile</code>.  It
-     * does this by creating a folder following the
-     * "<code>yyyy-MM-dd-HH-mm</code>" format for dates and appends
-     * <code>activeCharacterName</code>, <code>activeProfile.name</code> and
-     * then "<code>Backup</code>".  Inside that folder, all selected components
-     * are copied from the active directory.
-     * 
-     * @return <code>true</code> if the backup was successful,
-     *         <code>false</code> otherwise.
-     */
-    private static boolean backupActiveProfile () {
-        
-        Calendar cal = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
-        String timestamp = dateFormat.format(cal.getTime());
-        
-        System.out.println("Timestamp: " + timestamp);
-        
-        String backupName = timestamp + " " + activeCharacterName
-                                      + " " + activeProfile.name + " Backup";
-        
-        System.out.println("Backup Name: " + backupName);
-        
-        return true;
-    }
-    
-    
     /**
      * TODO:  For now, this will simply overwrite the files in the current directory with whichever one(s) are in the backup being loaded.
      * 
@@ -499,6 +446,7 @@ public class ProfileManager {
         }
         return true;
     }
+    
     
     
     /**
@@ -555,7 +503,27 @@ public class ProfileManager {
     
     
     
-    
+    /**
+     * <p>Searches unidentified character folders for the string provided in
+     * <code>name</code>.  Once found:
+     * <ol>
+     * <li> The <code>Character</code> object who
+     * owns that folder has its name set to <code>name</code></li>
+     * <li> That same
+     * <code>Character</code> object's <code>identified</code> flag is set to
+     * <code>true</code></li>
+     * <li> The <code>Character</code> object is
+     * returned.</li>
+     * </ol></p>
+     * 
+     * @param character     <code>Character</code> object, whose folder is to be
+     *                      searched.
+     * @param name          Name given by user, to check against character
+     *                      folder.
+     * 
+     * @return              <code>true</code> if user-given name was found in
+     *                      the folder, <code>false</code> otherwise.
+     */
     private static boolean searchCharacterFolder (Character character, String name) {
         //  TODO:  Build searchCharacterFolder()
         String characterLogDirectoryString = FFXIV_FOLDER + FOLDER_DIVIDER + character.getId() + FOLDER_DIVIDER + "log" + FOLDER_DIVIDER;
@@ -569,12 +537,8 @@ public class ProfileManager {
         
         if (logFiles != null && logFiles.length > 0) {
             
-            //DEBUG:
-            //System.out.printf("\n(%s) Found %d log files.\n", character.getId(), logFiles.length);
-
             for (File file : logFiles) {
-                //  DEBUG:
-                //System.out.printf("\n(%s) Searching through file (%s)...\n", character.getId(), file.getName());
+                
                 try {
                     
                     byte[] encoded = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
@@ -646,6 +610,9 @@ public class ProfileManager {
     
     
     
+    /**
+     * Frame used to display all unidentified characters.
+     */
     private static class UnidentifiedCharactersFrame extends JFrame {
         
         public UnidentifiedCharactersFrame () {

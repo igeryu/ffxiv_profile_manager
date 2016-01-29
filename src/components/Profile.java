@@ -33,7 +33,7 @@ public class Profile implements Component {
         name = n;
         characterName = cName;
         characterID = cID;
-        directory = dir;
+        directory = dir + cID;
         
         loadProfileData();
     }
