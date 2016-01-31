@@ -8,6 +8,16 @@
  * 2016-01-29 : Updated logic for defining FFXIV_FOLDER, for Windows user path.
  * 2016-01-29 : Added addCharacter() method, to prevent duplication of Character objects created by scanBackups()
  * 2016-01-29 : Add much more to loadConfig(); now it reads the JSON file and creates appropriate Character/Profile/Backup objects
+ * 
+ * 2016-01-30 : Added identifyAllCharacters() method
+ * 2016-01-30 : Changed the first if/while loop in saveConfig() to one call to identifyAllCharacters()
+ * 2016-01-30 : Added call to identifyAllCharacters() to end of loadConfig()
+ * 2016-01-30 : Changed loadConfig() to call identifyAllCharacters() at the end
+ * 2016-01-30 : Added getActiveCharacter() method.
+ * 2016-01-30 : Changed init() to call getActiveCharacter() when it isn't already set
+ * 2016-01-30 : Fixed initConfig() to account for non-null active character/profile
+ * 2016-01-30 : Changed initConfig()'s name to saveConfig()
+ * 2016-01-30 : Updated loadConfig() so that it sets activeCharacter using getCharacter(activeCharacterName)
  */
 
 /**
@@ -19,6 +29,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -30,12 +41,16 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -44,8 +59,11 @@ import javax.swing.JOptionPane;
 import util.Character;
 import static javax.swing.JOptionPane.QUESTION_MESSAGE;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
+import static javax.swing.SwingConstants.CENTER;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -58,12 +76,11 @@ import util.TagManager;
  */
 /**
  *
- * @author Alan
+ * @author Alan Johnson
  */
 public class ProfileManager {
     
     //  Moved to main()
-    //private static final String FFXIV_FOLDER = "C:\\Users\\Alan\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
     private static String FFXIV_FOLDER;
     //  TODO: determine if folderDivider is needed:
     private static String FOLDER_DIVIDER;
@@ -82,16 +99,13 @@ public class ProfileManager {
     private static ArrayList<Character> characters;
     //private static ArrayList<Character> unidentifiedCharacters;
     private static boolean unidentifiedCharacters;
-    private static UnidentifiedCharactersFrame unidentifiedCharactersFrame;
+    //private static UnidentifiedCharactersFrame unidentifiedCharactersFrame;
     
     //  TODO:  Consider making this a local class:
     private static TagManager tagManager;
     
     
     public static void main(String[] args) {
-        //  Change this from hard-coded to dynamic:
-        //activeCharacterName = "Feyen";
-        //activeCharacterID = "FFXIV_CHR00400000009D4722";
         
         if (System.getProperty("os.name").equals("Mac OS X")) {
             FFXIV_FOLDER = System.getProperty("user.home") + "/documents/Final Fantasy XIV - A Realm Reborn/";
@@ -106,7 +120,9 @@ public class ProfileManager {
         
         init();
         
-        backupActiveProfile();
+        System.exit(0);
+        
+        //backupActiveProfile();
     }
     
     
@@ -156,8 +172,144 @@ public class ProfileManager {
         System.out.println("Backup Name: " + backupName);
         
         return true;
-    }
+    }  //  end method backupActiveProfile()
     
+    
+    
+    /**
+     * 
+     */
+    private static Character getActiveCharacter() {
+        
+        JFrame charactersFrame;
+        boolean madeSelection = false;
+        Character characterSelected;
+        
+        charactersFrame = new JFrame() {
+            JScrollPane pane;
+            JList charactersList;
+            JButton selectButton;
+            JButton cancelButton;
+            Character character;
+
+            ArrayList<JRadioButton> characterRadioButtons;
+            ButtonGroup characterButtonGroup;
+
+            {
+                setTitle("Identify Active Character");
+                setName("");
+                setLocationRelativeTo(null);
+                characterRadioButtons = new ArrayList<>();
+                characterButtonGroup = new ButtonGroup();
+
+                //pane = new JScrollPane(buildCharacterList());
+                pane = new JScrollPane(buildCharacterPanel());
+                selectButton = new javax.swing.JButton();
+                cancelButton = new javax.swing.JButton();
+
+                setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+                selectButton.setText("Select");
+                selectButton.addActionListener(new java.awt.event.ActionListener() {
+                    public void actionPerformed(java.awt.event.ActionEvent evt) {
+                        String characterName = characterButtonGroup.getSelection().getActionCommand();
+                        if (characterName != null) {
+                            //  DEBUG:
+                            System.out.printf("\nselectedButton.getText = \"%s\"\n", characterName);
+                            
+                            setName(characterName);
+                            setVisible(false);
+                        }
+                    }
+                });
+
+                cancelButton.setText("Cancel");
+                cancelButton.addActionListener(new java.awt.event.ActionListener() {
+                    public void actionPerformed(java.awt.event.ActionEvent evt) {
+                        System.exit(0);
+                    }
+                });
+
+                GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+                getContentPane().setLayout(layout);
+                layout.setHorizontalGroup(
+                        layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                        .addComponent(pane)
+                                        .addGroup(layout.createSequentialGroup()
+                                                .addComponent(selectButton)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 69, Short.MAX_VALUE)
+                                                .addComponent(cancelButton)))
+                                .addContainerGap())
+                );
+                layout.setVerticalGroup(
+                        layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(pane, javax.swing.GroupLayout.DEFAULT_SIZE, 237, Short.MAX_VALUE)
+                                .addGap(18, 18, 18)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                        .addComponent(selectButton)
+                                        .addComponent(cancelButton))
+                                .addContainerGap())
+                );
+
+                pack();
+            }
+
+            private JScrollPane buildCharacterPanel() {
+
+                JPanel charactersPanel = new JPanel();
+                charactersPanel.setLayout(new GridLayout(characters.size(), 1));
+
+                for (Character character : characters) {
+                    //  DEBUG:
+                    //System.out.printf("\nAdding %s to characterRadioButtonList", character.getName());
+
+                    JRadioButton newRadioButton = new JRadioButton(character.getName());
+                    newRadioButton.setActionCommand(character.getName());
+                    newRadioButton.setHorizontalAlignment(CENTER);
+                    characterRadioButtons.add(newRadioButton);
+                    characterButtonGroup.add(newRadioButton);
+                    charactersPanel.add(newRadioButton);
+                }
+
+                JScrollPane pane = new JScrollPane(charactersPanel);
+                pane.getVerticalScrollBar().setUnitIncrement(100);
+                pane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS);
+                pane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
+
+                charactersPanel.validate();
+                pane.validate();
+                return pane;
+
+            }  //end buildCharacterList()
+            
+            Character getSelectedCharacter() {
+                return character;
+            }
+
+        };
+
+        charactersFrame.setVisible(true);
+
+        //  DEBUG:
+        System.out.println("\nWaiting for user input...");
+        while (charactersFrame.getName().equals("")) {
+             //  spin on user input
+            //System.out.print("...|");
+            System.out.print("");
+         }
+        
+         System.out.printf("\nUser gave input (\"%s\").\n", charactersFrame.getName());
+        
+         activeCharacterName = charactersFrame.getName();
+         return getCharacter(charactersFrame.getName());
+        
+    }
+
     
     
     /**
@@ -198,6 +350,22 @@ public class ProfileManager {
         }
         return null;
     }
+    
+    
+    
+    /**
+     * <p>Loops every time <code>verifyScannedBackups</code> returns a value
+     * greater than 0.  With each iteration, <code>identifyCharacter()</code> is
+     * called.</p>
+     */
+    private static void identifyAllCharacters() {
+
+        while (verifyScannedBackups() > 0) {
+            
+            identifyCharacter();
+
+        }  //  if there is at least one unverified character
+    }  // end method identifyAllCharacters()
     
     
     
@@ -306,7 +474,7 @@ public class ProfileManager {
             if (file.exists()) {
                 loadConfig(file);
             } else {
-                initConfig(file);
+                saveConfig(file);
             }
             
         } else {
@@ -314,14 +482,17 @@ public class ProfileManager {
             return;
         }
         
-        //  change "test" to the name received earlier
-        activeProfile = getActiveProfile(activeCharacterName);
+        if (activeCharacterName.equals("@Not_Selected") || activeCharacter == null) {
+            activeCharacter = getActiveCharacter();
+        }
         
-    }  //  end int() method
+        saveConfig(file);
+        
+    }  //  end init() method
     
     
     
-    // TODO:  Need to fix initConfig(File, String) so that it creates the correct JSON file structure.
+    // TODO:  Need to fix saveConfig(File, String) so that it creates the correct JSON file structure.
      
     /**
      * <p>Runs during first-time setup.  Creates a new configuration file, who's
@@ -332,28 +503,12 @@ public class ProfileManager {
      * @param file     Configuration file, whose name is determined by
      *                 <code>DATA_FILE_NAME</code>.
      */
-    //private static void initConfig (File file, String name) {
-    private static void initConfig (File file) {
+    //private static void saveConfig (File file, String name) {
+    private static void saveConfig (File file) {
         
-        System.out.println("\nInitializing configuration settings...");
+        System.out.println("\nSaving configuration settings...");
         
-        if (verifyScannedBackups() > 0) {
-            //OLD: while (unidentifiedCharacters.size() > 0) {
-            while (unidentifiedCharacters) {
-                
-                identifyCharacter();
-                
-                //  This is to ensure that unidentifiedCharacters is still valid:
-                verifyScannedBackups();
-                
-            }  //  while unidentifiedCharacters (has objects within)
-            
-        }  //  if there is at least one unverified character
-        
-        else {
-            System.out.println("\nNo character folders found.");
-            return;
-        }
+        identifyAllCharacters();
         
         //  =================================================================
         
@@ -362,8 +517,18 @@ public class ProfileManager {
         
         //  Root
         JSONObject rootJSON = new JSONObject();
-        rootJSON.put("Active Character", "@Not_Selected");
-        rootJSON.put("Active Profile", "@Not_Selected");
+        if (activeCharacter != null && activeCharacterName != null) {
+            rootJSON.put("Active Character", activeCharacterName);
+        } else {
+            rootJSON.put("Active Character", "@Not_Selected");
+        }
+        
+        if (activeProfile != null && activeProfileName != null) {
+            rootJSON.put("Active Profile", activeProfileName);
+        } else {
+            rootJSON.put("Active Profile", "@Not_Selected");
+        }
+        
         JSONObject charactersRootJSON = new JSONObject();
         
         //  TODO:  This is just to make it work, for now...
@@ -399,12 +564,12 @@ public class ProfileManager {
         try (FileWriter fileWriter = new FileWriter(DATA_FILE_NAME)) {
             fileWriter.write(rootJSON.toJSONString());
             System.out.println("Successfully Copied JSON Object to File...");
-            System.out.println("\nJSON Object: " + rootJSON);
+            //System.out.println("\nJSON Object: " + rootJSON);
         } catch (IOException e) {
             System.out.println("IOException: " + e.getLocalizedMessage());
         }
         
-    }  //  end method initConfig()
+    }  //  end method saveConfig()
     
     
     
@@ -460,7 +625,7 @@ public class ProfileManager {
             // Map.Entry<Integer, GameElement> e : allElements.entrySet()
             for (Map.Entry<String, Object> characterEntry : characterSets) {
                 //  DEBUG:
-                System.out.printf("\nnewCharacterName = \"%s\"", characterEntry.getKey());
+                //System.out.printf("\nnewCharacterName = \"%s\"", characterEntry.getKey());
                 
                 String newCharacterName = characterEntry.getKey();
                 JSONObject newCharacterJSON = (JSONObject) characterEntry.getValue();
@@ -491,7 +656,7 @@ public class ProfileManager {
                 addCharacter(newCharacter);
                 
                 //  DEBUG:
-                System.out.printf("\nnewCharacter.getName() = \"%s\"", newCharacter.getName());
+                //System.out.printf("\nnewCharacter.getName() = \"%s\"", newCharacter.getName());
             }  //  iterate through characters
             
             
@@ -513,14 +678,20 @@ public class ProfileManager {
                 }  // iterate through profiles
                 
             }  // iterate through characters
+            //  END DEBUG
  
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
         
+        //  Verify that all characters are identified, and take action if not:
+        identifyAllCharacters();
+        
+        activeCharacter = getCharacter(activeCharacterName);
+        
         return true;
-    }
+    }  //  end method loadConfig()
     
     
     
@@ -675,12 +846,12 @@ public class ProfileManager {
      * 
      * <p>After <code>scanBackups()</code> has been run at least once, this
      * checks each <code>Character</code> object in the <code>characters</code>
-     * identifiedCharactersList for a <code>null</code> name.  Each time one is found, it is
+     * charactersList for a <code>null</code> name.  Each time one is found, it is
      * added to <code>unidentifiedCharacters</code>.</p>
      * 
      * <p>OLD:  After <code>scanBackups()</code> has been run at least once, this
      * checks each <code>Character</code> object in the <code>characters</code>
-     * identifiedCharactersList for a <code>null</code> name.  Each time one is found, it is
+     * charactersList for a <code>null</code> name.  Each time one is found, it is
      * added to <code>unidentifiedCharacters</code>.</p>
      * 
      * <p><code>Character</code> objects with having name indicate that they
@@ -707,11 +878,15 @@ public class ProfileManager {
         return found;
         
     }  //  end method verifiyScannedBackups()
+
+    
     
     
     
     /**
-     * Frame used to display all unidentified characters.
+     * TODO:  Consider making UnidentifiedCharactersFrame logic into a ProfileManager method, and remove the class.
+     * 
+     * <p>Frame used to display all unidentified characters.</p>
      */
     private static class UnidentifiedCharactersFrame extends JFrame {
         
@@ -753,35 +928,35 @@ public class ProfileManager {
         
         private JScrollPane buildIdentifiedCharacterList() {
             
-            //Get a identifiedCharactersList of identified characters:
-            ArrayList<JPanel> identifiedCharacterPanels = new ArrayList<>();
+            //Get a charactersList of identified characters:
+            ArrayList<JPanel> characterRadioButtonList = new ArrayList<>();
             for (Character character : characters) {
                 if (character.identified())
-                    identifiedCharacterPanels.add(character.getCharacterPanel());
+                    characterRadioButtonList.add(character.getCharacterPanel());
             }
             
-            JList<JPanel> identifiedCharactersList = new JList<JPanel>() {
+            JList<JPanel> charactersList = new JList<JPanel>() {
                 private static final long serialVersionUID = 1L;
                 @Override public Dimension getPreferredSize() {
                     int width = 250;
-                    int rows = identifiedCharacterPanels.size();
+                    int rows = characterRadioButtonList.size();
                     int height = 5 * rows;
                     return new Dimension(width, height);
                 }
             };
             
-            for (JPanel panel : identifiedCharacterPanels) {
-                identifiedCharactersList.add(panel);
+            for (JPanel panel : characterRadioButtonList) {
+                charactersList.add(panel);
             }
             
-            identifiedCharactersList.setLayout(new FlowLayout());
-            identifiedCharactersList.setLayoutOrientation(JList.VERTICAL);
+            charactersList.setLayout(new FlowLayout());
+            charactersList.setLayoutOrientation(JList.VERTICAL);
             
-            JScrollPane pane = new JScrollPane(identifiedCharactersList);
+            JScrollPane pane = new JScrollPane(charactersList);
             pane.getVerticalScrollBar().setUnitIncrement(100);
             pane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS);
             
-            identifiedCharactersList.validate();
+            charactersList.validate();
             pane.validate();
             
             setVisible(true);
