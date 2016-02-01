@@ -18,6 +18,8 @@
  * 2016-01-30 : Fixed initConfig() to account for non-null active character/profile
  * 2016-01-30 : Changed initConfig()'s name to saveConfig()
  * 2016-01-30 : Updated loadConfig() so that it sets activeCharacter using getCharacter(activeCharacterName)
+ * 
+ * 2016-02-01 : Did some refactoring.
  */
 
 /**
@@ -41,14 +43,12 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
-import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
@@ -80,7 +80,6 @@ import util.TagManager;
  */
 public class ProfileManager {
     
-    //  Moved to main()
     private static String FFXIV_FOLDER;
     //  TODO: determine if folderDivider is needed:
     private static String FOLDER_DIVIDER;
@@ -90,16 +89,14 @@ public class ProfileManager {
     //  Assumes that whatever is active in the user directory is the
     //  application's active profile.
     private static Profile activeProfile;
-    private static String activeProfileName;
-    private static Character activeCharacter;
-    private static String  activeCharacterName;
-    private static String  activeCharacterID;
+    private static String  activeProfileName;
     
-    //  TODO:  Need to fill this out.
+    private static Character activeCharacter;
+    private static String    activeCharacterName;
+    private static String    activeCharacterID;
+    
     private static ArrayList<Character> characters;
-    //private static ArrayList<Character> unidentifiedCharacters;
     private static boolean unidentifiedCharacters;
-    //private static UnidentifiedCharactersFrame unidentifiedCharactersFrame;
     
     //  TODO:  Consider making this a local class:
     private static TagManager tagManager;
@@ -110,8 +107,7 @@ public class ProfileManager {
         if (System.getProperty("os.name").equals("Mac OS X")) {
             FFXIV_FOLDER = System.getProperty("user.home") + "/documents/Final Fantasy XIV - A Realm Reborn/";
             FOLDER_DIVIDER = "/";
-        }
-        else {
+        } else {
             FFXIV_FOLDER = System.getProperty("user.home") + "\\Documents\\My Games\\FINAL FANTASY XIV - A Realm Reborn\\";
             FOLDER_DIVIDER = "\\";
         }
@@ -122,7 +118,6 @@ public class ProfileManager {
         
         System.exit(0);
         
-        //backupActiveProfile();
     }
     
     
@@ -130,16 +125,16 @@ public class ProfileManager {
     /**
      * <p>Checks if a similar character (same folder ID) has already been added.
      * If so, this combines the data by copying it to the existing character.</p>
-     * @param c 
+     * @param c     New to be added (and verified)
      */
     private static void addCharacter(Character c) {
         for (Character character : characters) {
             if (character.getId().equals(c.getId())) {
                 character.setName(c.getName());
                 character.setIdentified(true);
-            }
-        }
-    }
+            }  //  if both characters have the same ID
+        }  //  for each item in characters
+    }  //  end method addCharacter()
     
     
     
@@ -177,7 +172,10 @@ public class ProfileManager {
     
     
     /**
+     * <p>Asks the user to identify, from a list of all identified characters,
+     * which character should be the current active one</p>
      * 
+     * @return     Active character, chosen by user
      */
     private static Character getActiveCharacter() {
         
@@ -202,7 +200,6 @@ public class ProfileManager {
                 characterRadioButtons = new ArrayList<>();
                 characterButtonGroup = new ButtonGroup();
 
-                //pane = new JScrollPane(buildCharacterList());
                 pane = new JScrollPane(buildCharacterPanel());
                 selectButton = new javax.swing.JButton();
                 cancelButton = new javax.swing.JButton();
@@ -215,7 +212,7 @@ public class ProfileManager {
                         String characterName = characterButtonGroup.getSelection().getActionCommand();
                         if (characterName != null) {
                             //  DEBUG:
-                            System.out.printf("\nselectedButton.getText = \"%s\"\n", characterName);
+                            //System.out.printf("\nselectedButton.getText = \"%s\"\n", characterName);
                             
                             setName(characterName);
                             setVisible(false);
@@ -287,23 +284,20 @@ public class ProfileManager {
 
             }  //end buildCharacterList()
             
-            Character getSelectedCharacter() {
-                return character;
-            }
-
         };
 
         charactersFrame.setVisible(true);
 
         //  DEBUG:
-        System.out.println("\nWaiting for user input...");
+        //System.out.println("\nWaiting for user input...");
         while (charactersFrame.getName().equals("")) {
              //  spin on user input
             //System.out.print("...|");
             System.out.print("");
          }
         
-         System.out.printf("\nUser gave input (\"%s\").\n", charactersFrame.getName());
+        //  DEBUG:
+        //System.out.printf("\nUser gave input (\"%s\").\n", charactersFrame.getName());
         
          activeCharacterName = charactersFrame.getName();
          return getCharacter(charactersFrame.getName());
@@ -339,17 +333,21 @@ public class ProfileManager {
     
     /**
      * TODO:  Need to implement code for multiple characters of same name (different server)
-     * @param name
-     * @return 
+     * 
+     * Given the name of the character, this method locates the item in
+     * <code>characters</code> that matches that name and returns it.
+     * 
+     * @param name     Name of character to locate
+     * @return         Appropriate character or <code>null</code>
      */
     private static Character getCharacter (String name) {
         for (Character character : characters) {
             if (character.getName().equals(name)) {
                 return character;
-            }
-        }
+            }  //  if the character's name matches the search string
+        }  // for each item in characters
         return null;
-    }
+    }  // end method getCharacter()
     
     
     
@@ -376,16 +374,10 @@ public class ProfileManager {
      * <p> Then searches the folder of each <code>Character</code> object whose
      * <code>identified</code> flag is <code>false</code>, until one is
      * identified as being correct, none are found (error).</p>
-     * 
-     * <p>OLD:  Then searches the folder of each entry in
-     * <code>unidentifiedCharacters</code> until one is identified as being
-     * correct, or none are found (error).</p>
      */
     private static void identifyCharacter () {
         
         System.out.println("\nIdentifying Character...");
-        
-        //unidentifiedCharactersFrame = new UnidentifiedCharactersFrame();
         
         String unidentifiedCharacterNames = "Identified Characters:\n";
         
@@ -431,30 +423,34 @@ public class ProfileManager {
 //            }
 //        }
         
-        // TODO:  Add support for multiple characters of same name, but different servers.
+        /**
+         * 2. Locate folder by character name.  If successful, create a new
+         *    Character object, call identifyProfiles() on it and add it to
+         *    characters ArrayList, then return true.
+         * 
+         * TODO:  Add support for multiple characters of same name, but different servers.
+         * TODO:  Situation where a list of unidentified characters would be more efficient:
+         */
         
-        //  2. Locate folder by character name.  If successful, create a new
-        //     Character object, call identifyProfiles() on it and add it to
-        //     characers ArrayList, then return true.
-        //  TODO: Situation where a list of unidentified characters would be more efficient:
         for (Character character : characters) {
-            if (!character.identified() && searchCharacterFolder(character, name)) {
-                //DEBUG:
-                //System.out.println("\nCharacter " + name + " found!");
-                return true;
-            }
-        }
+            if (!character.identified()) {
+                return searchCharacterFolder(character, name);
+            }  //  if the character is not identified
+        }  // for each item in characters
         
         return false;
-    }
+    }  // end method identifyCharacterFolder()
     
     
     /**
-    * Runs every time the application is opened.  Checks if there is a
-    * <code>DATA_FILE_NAME</code> file (first run condition), and if so, it asks
-    * the user to name their current profile.
+    * <p>Runs every time the application is opened:</p>
     * 
-    * TODO: Need to make this ask for <b>ALL</b> characters' full names and then identify each character's folder from the log files.
+    * <p>If <code>scanBackups()</code> returns false, the method returns early.
+    * Otherwise, it checks if <code>file</code> exists.  If it does,
+    * <code>loadConfig()</code> is executed; otherwise <code>saveConfig()</code>
+    * is executed.</p>
+    * 
+    * <p>TODO: Need to make this ask for <b>ALL</b> characters' full names and then identify each character's folder from the log files.</p>
     */
     private static void init() {
         System.out.println("Initializing app");
@@ -469,11 +465,12 @@ public class ProfileManager {
         
         //  Check if any folders exist:
         if (scanBackups()) {
-            //characters.get(0);
+
             //  Check if this is first load:
             if (file.exists()) {
                 loadConfig(file);
             } else {
+                //  TODO:  Since saveConfig() runs at the end of this method, see if this call can be eliminated.
                 saveConfig(file);
             }
             
@@ -482,6 +479,7 @@ public class ProfileManager {
             return;
         }
         
+        //  Check if the active character isn't chosen, and have the user choose it (if needed):
         if (activeCharacterName.equals("@Not_Selected") || activeCharacter == null) {
             activeCharacter = getActiveCharacter();
         }
@@ -492,105 +490,24 @@ public class ProfileManager {
     
     
     
-    // TODO:  Need to fix saveConfig(File, String) so that it creates the correct JSON file structure.
-     
     /**
-     * <p>Runs during first-time setup.  Creates a new configuration file, who's
-     * name was previously determined by <code>DATA_FILE_NAME</code>.</p>
-     * 
-     * <p>Parameters beginning with a '<code>@</code>' are place holders.</p>
-     * 
-     * @param file     Configuration file, whose name is determined by
-     *                 <code>DATA_FILE_NAME</code>.
-     */
-    //private static void saveConfig (File file, String name) {
-    private static void saveConfig (File file) {
-        
-        System.out.println("\nSaving configuration settings...");
-        
-        identifyAllCharacters();
-        
-        //  =================================================================
-        
-        System.out.println("Initializing " + DATA_FILE_NAME);
-        System.out.println("Writing JSON file...");
-        
-        //  Root
-        JSONObject rootJSON = new JSONObject();
-        if (activeCharacter != null && activeCharacterName != null) {
-            rootJSON.put("Active Character", activeCharacterName);
-        } else {
-            rootJSON.put("Active Character", "@Not_Selected");
-        }
-        
-        if (activeProfile != null && activeProfileName != null) {
-            rootJSON.put("Active Profile", activeProfileName);
-        } else {
-            rootJSON.put("Active Profile", "@Not_Selected");
-        }
-        
-        JSONObject charactersRootJSON = new JSONObject();
-        
-        //  TODO:  This is just to make it work, for now...
-        int increment = 0;
-        
-        for (Character character : characters) {
-            
-            JSONObject characterJSON = new JSONObject();
-            characterJSON.put("ID", character.getId());
-            String name = character.getName() != null ? character.getName() : "@Unknown_" + increment++;
-            
-            //  TODO:  Implement this:
-            //characterJSON.put("Active Profile", character.getActiveProfile().name);
-            
-            /*
-            //  Add profiles/backups:
-            JSONArray profileJSON = new JSONArray();
-            profileJSON.add("Backup1 Timestamp");
-            profileJSON.add("Backup2 Timestamp");
-            characterJSON.put("MyProfile", myProfile);
-            */
-
-            charactersRootJSON.put(name, characterJSON);
-            
-            //System.out.println("\nJSON Snapshot:\n" + charactersRootJSON);
-
-        }
-        
-        rootJSON.put("Characters", charactersRootJSON);
-        
-
-        // try-with-resources statement based on post comment below :)
-        try (FileWriter fileWriter = new FileWriter(DATA_FILE_NAME)) {
-            fileWriter.write(rootJSON.toJSONString());
-            System.out.println("Successfully Copied JSON Object to File...");
-            //System.out.println("\nJSON Object: " + rootJSON);
-        } catch (IOException e) {
-            System.out.println("IOException: " + e.getLocalizedMessage());
-        }
-        
-    }  //  end method saveConfig()
-    
-    
-    
-    /**
-     * Loads the configuration file, whose name is identified by
-     * <code>DATA_FILE_NAME</code>, into memory.
-     * 
      * <p><code>scanBackups()</code> is assumed to have already run before this
-     * method runs.  It then verifies that each character folder contained
+     * method runs.</p>
+     * 
+     * <p>Loads the configuration file, whose name is identified by
+     * <code>DATA_FILE_NAME</code>, into memory.</p>
+     * 
+     * <p>It then verifies that each character folder contained
      * within is matched with a corresponding entry in
      * <code>characters</code></p>
      * 
      * @param file     <code>File</code> object, whose name is determined by
      *                 <code>DATA_FILE_NAME</code>.
      * 
-     * @return         <code>null String</code> TODO: fix this
+     * @return         pass/fail status
      */
     //private static String loadConfig(File file) {
     private static boolean loadConfig(File file) {
-        
-        //  TODO:  Iterate through character folders in 'FFXIV_FOLDER' and look for ones that are not identified in the 'characters' identifier.
         
         System.out.println("Loading " + DATA_FILE_NAME);
         
@@ -622,7 +539,6 @@ public class ProfileManager {
             ArrayList<JSONObject> charactersJSON = new ArrayList<>();
             Set<Entry<String, Object>> characterSets = charactersRootJSON.entrySet();
             
-            // Map.Entry<Integer, GameElement> e : allElements.entrySet()
             for (Map.Entry<String, Object> characterEntry : characterSets) {
                 //  DEBUG:
                 //System.out.printf("\nnewCharacterName = \"%s\"", characterEntry.getKey());
@@ -696,7 +612,7 @@ public class ProfileManager {
     
     
     /**
-     * TODO:  For now, this will simply overwrite the files in the current directory with whichever one(s) are in the backup being loaded.
+     * <p>TODO:  For now, this will simply overwrite the files in the current directory with whichever one(s) are in the backup being loaded.</p>
      * 
      * Initiates profile load procedure by backing up the active profile, and
      * then calling the <code>loadProfile()</code> method on the
@@ -716,7 +632,86 @@ public class ProfileManager {
             activeCharacterID = character.getId();
         }
         return true;
-    }
+    }  //  end method loadProfile()
+    
+    
+    
+    /**
+     * <p>Overwrites the configuration file, who's name was previously
+     * determined by <code>DATA_FILE_NAME</code>.</p>
+     * 
+     * <p>Parameters beginning with a '<code>@</code>' are place holders.</p>
+     * 
+     * @param file     Configuration file, whose name is determined by
+     *                 <code>DATA_FILE_NAME</code>.
+     */
+    //private static void saveConfig (File file, String name) {
+    private static void saveConfig (File file) {
+        
+        System.out.println("\nSaving configuration settings...");
+        
+        identifyAllCharacters();
+        
+        //  =================  Begin JSON Processing  =================
+        
+        System.out.println("Initializing " + DATA_FILE_NAME);
+        System.out.println("Writing JSON file...");
+        
+        //  Root
+        JSONObject rootJSON = new JSONObject();
+        if (activeCharacter != null && activeCharacterName != null) {
+            rootJSON.put("Active Character", activeCharacterName);
+        } else {
+            rootJSON.put("Active Character", "@Not_Selected");
+        }
+        
+        if (activeProfile != null && activeProfileName != null) {
+            rootJSON.put("Active Profile", activeProfileName);
+        } else {
+            rootJSON.put("Active Profile", "@Not_Selected");
+        }
+        
+        JSONObject charactersRootJSON = new JSONObject();
+        
+        //  TODO:  This is just to make it work, for now...
+        int increment = 0;
+        
+        for (Character character : characters) {
+            
+            JSONObject characterJSON = new JSONObject();
+            characterJSON.put("ID", character.getId());
+            String name = character.getName() != null ? character.getName() : "@Unknown_" + increment++;
+            
+            //  TODO:  Implement this:
+            //characterJSON.put("Active Profile", character.getActiveProfile().name);
+            
+            /*
+            //  Add profiles/backups:
+            JSONArray profileJSON = new JSONArray();
+            profileJSON.add("Backup1 Timestamp");
+            profileJSON.add("Backup2 Timestamp");
+            characterJSON.put("MyProfile", myProfile);
+            */
+
+            charactersRootJSON.put(name, characterJSON);
+            
+            //  DEBUG:
+            //System.out.println("\nJSON Snapshot:\n" + charactersRootJSON);
+
+        }
+        
+        rootJSON.put("Characters", charactersRootJSON);
+        
+
+        try (FileWriter fileWriter = new FileWriter(DATA_FILE_NAME)) {
+            fileWriter.write(rootJSON.toJSONString());
+            System.out.println("Successfully Copied JSON Object to File...");
+            
+        } catch (IOException e) {
+            System.out.println("IOException: " + e.getLocalizedMessage());
+        }
+        
+    }  //  end method saveConfig()
     
     
     
@@ -729,20 +724,16 @@ public class ProfileManager {
      * 
      * <p>For each character/folder it finds, it will call
      * <code>Character.scanBackups()</code>.
+     * 
+     * @return    <code>true</code> if at least one folder was found (regardless of it being properly identified)
      */
     private static boolean scanBackups () {
         
         System.out.println("\nScanning backups...");
         
         /**
-         * TODO:  Iterate through character folders in 'FFXIV_FOLDER' and create Character objects for each
-         * 
-         * <p>Iterates through each folder in <code>FFXIV_FOLDER</code> and add
-         * each one that matches the "<code>FFXIV_CHR...</code>" pattern.</p>
-         * 
-         *<p>OLD: If there is at least one folder not identified, inform the
-         * user of the number ("Found # unidentified characters"), and then call
-         * chooseProfileName() that many times.</p>
+         * Iterates through each folder in FFXIV_FOLDER and add a new Character
+         * object for each one that matches the "FFXIV_CHR..." pattern.
          */
         
         File directory = new File(FFXIV_FOLDER);
@@ -754,10 +745,10 @@ public class ProfileManager {
         
         if (characterFolders.length > 0) {
             
-            System.out.println("\nFound " + characterFolders.length + " folders.");
+            System.out.println("\nFolders found: " + characterFolders.length);
             
             for (File folder : characterFolders) {
-                //System.out.println("\nAdding character folder...");
+                
                 String id = folder.getName();
                 Character newCharacter = new Character(id);
                 characters.add(newCharacter);
@@ -796,7 +787,7 @@ public class ProfileManager {
      *                      the folder, <code>false</code> otherwise.
      */
     private static boolean searchCharacterFolder (Character character, String name) {
-        //  TODO:  Build searchCharacterFolder()
+        
         String characterLogDirectoryString = FFXIV_FOLDER + FOLDER_DIVIDER + character.getId() + FOLDER_DIVIDER + "log" + FOLDER_DIVIDER;
         File characterLogDirectory = new File(characterLogDirectoryString);
         
@@ -835,44 +826,38 @@ public class ProfileManager {
         //System.out.printf("\n(%s) String not found in log file...\n", character.getId());
 
         return false;
-    }
+    }  //  end method searchCharacterFolder()
     
     
     
     /**
-     * TODO:  Likely should rename this so that the return value makes more sense.
-     * 
-     * <p>Should probably be depreciated/removed...</p>
+     * <p>TODO:  Likely should rename this so that the return value makes more sense.</p>
+     * <p>TODO:  Determine if the <code>found</code> value (and return value) is significant beyond whether it is zero or non-zero.</p>
      * 
      * <p>After <code>scanBackups()</code> has been run at least once, this
-     * checks each <code>Character</code> object in the <code>characters</code>
-     * charactersList for a <code>null</code> name.  Each time one is found, it is
-     * added to <code>unidentifiedCharacters</code>.</p>
+     * checks each <code>Character</code> object in <code>characters</code>
+     * for one whose <code>identified()</code> method is false.  Each time one
+     * is found, <code>found</code> is incremented.</p>
      * 
-     * <p>OLD:  After <code>scanBackups()</code> has been run at least once, this
-     * checks each <code>Character</code> object in the <code>characters</code>
-     * charactersList for a <code>null</code> name.  Each time one is found, it is
-     * added to <code>unidentifiedCharacters</code>.</p>
-     * 
-     * <p><code>Character</code> objects with having name indicate that they
-     * have not been identified by the user.</p>
-     * 
-     * <p>Returns the number of unidentified characters found.</p>
+     * <p>After iterating through <code>characters</code>,
+     * <code>unidentifiedCharacters</code> is set to <code>true</code> if at least one
+     * unidentified character was discovered; <code>false</code> otherwise.</p>
      * 
      * @return     Number of unidentified characters found.
      */
     private static int verifyScannedBackups() {
         System.out.println("\nVerifying scanned backups...");
         int found = 0;
-        //unidentifiedCharacters = new ArrayList<>();
         
         for (Character character : characters) {
-            //if (character.getName() == null) {
+            
             if (!character.identified()) {
-                //unidentifiedCharacters.add(character);
+                
                 found++;
+                
             }  // if the character has no name (hasn't been identified)
-        }  //  for each character in characters
+        
+        }  //  for each item in characters
         
         unidentifiedCharacters = found > 0 ? true : false;
         return found;

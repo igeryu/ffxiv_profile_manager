@@ -1,3 +1,8 @@
+/**
+ * changelog:
+ * 2016-02-01 : Refactored.
+ */
+
 package components;
 
 
@@ -11,7 +16,7 @@ import java.util.ArrayList;
 
 /**
  *
- * @author Alan
+ * @author Alan Johnson
  */
 public class Profile implements Component {
     public  String name;
@@ -27,8 +32,15 @@ public class Profile implements Component {
     private UiLayout uiLayout;
     
     
-    //  TODO:  Determine if 'dir' should become a File held in ProfileManager,
-    //         or remain just a String argument passed to Profile class...
+    /**
+     * TODO:  Determine if 'dir' should become a File held in ProfileManager, or remain just a String argument passed to Profile class...
+     * TODO:  This should iterate through all backup folders and locate each one that belongs to this profile.
+     * TODO:  Determine if the <code>JSON</code> file should maintain backup names, or if identifying them each time is more efficient/enough.
+     * @param n         Profile name
+     * @param cName     Character name
+     * @param cID       Character ID
+     * @param dir       FFXIV install directory
+     */
     public Profile (String n, String cName, String cID, String dir) {
         name = n;
         characterName = cName;
@@ -40,6 +52,14 @@ public class Profile implements Component {
     
     //  TODO:  Determine if 'dir' should become a File held in ProfileManager,
     //         or remain just a String argument passed to Profile class...
+    /**
+     * 
+     * @param n               Profile name
+     * @param cName           Character name
+     * @param cID             Character ID
+     * @param dir             FFXIV install directory
+     * @param backupNames     List of backup names, possibly useless.
+     */
     public Profile (String n, String cName, String cID, String dir, ArrayList<String> backupNames) {
         name = n;
         characterName = cName;
@@ -50,10 +70,10 @@ public class Profile implements Component {
     }
     
     private boolean loadProfileData () {
-        gearset      = new Gearset(characterID, directory);
+        gearset      = new Gearset     (characterID, directory);
         hotbarLayout = new HotbarLayout(characterID, directory);
-        keybind      = new Keybind(characterID, directory);
-        uiLayout     = new UiLayout(characterID, directory);
+        keybind      = new Keybind     (characterID, directory);
+        uiLayout     = new UiLayout    (characterID, directory);
         return true;
     }
     
