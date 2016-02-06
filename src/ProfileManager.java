@@ -20,6 +20,11 @@
  * 2016-01-30 : Updated loadConfig() so that it sets activeCharacter using getCharacter(activeCharacterName)
  * 
  * 2016-02-01 : Did some refactoring.
+ * 
+ * 2016-02-05 : Added detectFolderChanges(File, File)
+ * 2016-02-05 : Added FileMismatchException
+ * 2016-02-05 : Added a call to detectFolderChanges() in init()
+ * 2016-02-05 : Updated backupActiveProfile() to actually copy files to a new backup directory
  */
 
 /**
@@ -42,7 +47,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,6 +71,10 @@ import javax.swing.JScrollPane;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 import static javax.swing.SwingConstants.CENTER;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.FileFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -139,8 +150,6 @@ public class ProfileManager {
     
     
     /**
-     * <p>TODO:  Need to add functionality to honor user's inclusion/exclusion choices (include gearsets, exclude keybinds, etc.) from the profile and ergo the backup.</p>
-     * 
      * <p>Backs up the active profile stored in <code>activeProfile</code>.  It
      * does this by creating a folder following the
      * "<code>yyyy-MM-dd-HH-mm</code>" format for dates and appends
@@ -153,21 +162,110 @@ public class ProfileManager {
      */
     private static boolean backupActiveProfile () {
         
+        //  DEBUG:
+        System.out.println("\nAttempting to backup active profile...");
+        
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
         String timestamp = dateFormat.format(cal.getTime());
         
         System.out.println("Timestamp: " + timestamp);
         
-        String backupName = timestamp + " " + activeCharacterName
-                                      + " " + activeProfile.name + " Backup";
+        String backupName = timestamp + " [" + activeCharacterName
+                                      + "] [" + activeProfile.getName() + "] Backup";
         
-        //  TODO: backupActiveProfile() ~ Create backup of components within folder.
-        
+        //  TODO: backupActiveProfile() ~ Acknowledge user's inclusion/exclusion choices (includ gearsets, exclude keybinds, etc.)
+        String characterDirectory = FFXIV_FOLDER + FOLDER_DIVIDER + activeCharacterID;
+        File current = new File(characterDirectory);
+        File backup = new File(characterDirectory + FOLDER_DIVIDER + backupName);
+        try {
+            IOFileFilter txtSuffixFilter = FileFilterUtils.suffixFileFilter(".DAT");
+            IOFileFilter txtFiles = FileFilterUtils.and(FileFileFilter.FILE, txtSuffixFilter);
+            
+            FileUtils.copyDirectory(current, backup, txtFiles, true);
+        } catch (Exception e) {
+            System.out.println("\nProfile backup failed!");
+            e.printStackTrace();
+        }
+
+        //  DEBUG:
         System.out.println("Backup Name: " + backupName);
         
         return true;
     }  //  end method backupActiveProfile()
+    
+    
+    
+    /**
+     * <p>TODO: Change detectFolderChanges() so that it accounts for backups whose sources are multiple profiles (because of included/excluded components)</p>
+     * 
+     * <p>Returns <code>true</code> if the <code>current</code> directory has any
+     * files with newer modification dates than the <code>backup</code>
+     * directory.</p>
+     * 
+     * @param backup      The backup directory
+     * @param current     The current working directory, to be checked for
+     *                    updates
+     * 
+     * @return            <code>true</code> if changes to the current directory
+     *                    are detected; <code>false</code> otherwise
+     */
+    private static boolean detectFolderChanges (Character character) throws FileMismatchException {
+        
+        String characterDirectory = FFXIV_FOLDER + FOLDER_DIVIDER + character.getId();
+        File current = new File(characterDirectory);
+        File backup = new File(characterDirectory + FOLDER_DIVIDER + character.getActiveProfile().getLastBackup().getName());
+        
+        //  Verify that both backup and current are directories:
+        if (!backup.isDirectory() || !current.isDirectory()) {
+            return false;
+        }
+        
+        Comparator<File> fileComparator = new Comparator<File>(){
+
+            @Override
+            public int compare(File o1, File o2) {
+                return o1.getName().compareToIgnoreCase(o2.getName());
+            }
+            
+        };
+        
+        //  Gather and sort backup files:
+        File[] backupFilesArray = backup.listFiles(new FilenameFilter(){
+            public boolean accept (File dir, String name) {
+                return name.endsWith("DAT");
+            }
+        });
+        ArrayList<File> backupFiles = new ArrayList<File> (Arrays.asList(backupFilesArray));
+        backupFiles.sort(fileComparator);
+        
+        //  Gather and sort current files:
+        File[] currentFilesArray = current.listFiles(new FilenameFilter(){
+            public boolean accept (File dir, String name) {
+                return name.endsWith("DAT");
+            }
+        });
+        ArrayList<File> currentFiles = new ArrayList<File> (Arrays.asList(currentFilesArray));
+        currentFiles.sort(fileComparator);
+        
+        //  TODO: Fix the following patch code:
+        int maxElements = backupFiles.size();
+        maxElements = maxElements < currentFiles.size() ? currentFiles.size() : maxElements;
+        
+        for (int x = 0; x < maxElements; x++) {
+            //  TODO: Fix the following patch code:
+            if (!currentFiles.get(x).getName().equals(backupFiles.get(x).getName())) {
+                throw new FileMismatchException();
+            }
+            
+            if (currentFiles.get(x).lastModified() > backupFiles.get(x).lastModified()) {
+                return true;
+            }  //  check if a current file is newer than its corresponding file in backup
+        }  // for each element in the ArrayLists
+        
+        
+        return false;
+    }  // end method detectFolderChanges()
     
     
     
@@ -357,6 +455,9 @@ public class ProfileManager {
      * called.</p>
      */
     private static void identifyAllCharacters() {
+        
+        //  DEBUG:
+        System.out.println("\nVerifying all characters are identified...");
 
         while (verifyScannedBackups() > 0) {
             
@@ -482,8 +583,29 @@ public class ProfileManager {
         //  Check if the active character isn't chosen, and have the user choose it (if needed):
         if (activeCharacterName.equals("@Not_Selected") || activeCharacter == null) {
             activeCharacter = getActiveCharacter();
+            activeCharacterID = activeCharacter.getId();
         }
         
+        //  Check if the active character's folder has been changed since the
+        //  last update:
+        try {
+            if (true) {
+            //if (detectFolderChanges(activeCharacter)) {
+                
+                //  DEBUG:
+                System.out.println("\nChanges detected in profile...");
+                Profile testProfile = new Profile("Test Profile", activeCharacter.getName(), activeCharacter.getId(), FFXIV_FOLDER);
+                activeCharacter.addProfile(testProfile);
+                activeProfile = testProfile;
+                
+                //  TODO: Determine if the return value should be used (or refactored out..):
+                backupActiveProfile();
+            }
+        } catch (Exception e) {
+            //System.out.println("\ndetectFolderChanges() failed!");
+            e.printStackTrace();
+        }
+
         saveConfig(file);
         
     }  //  end init() method
@@ -551,6 +673,7 @@ public class ProfileManager {
                 ArrayList<Profile> profiles = new ArrayList<>();
                 Set<Entry<String, Object>> profileSets = newCharacterJSON.entrySet();
                 for (Map.Entry<String, Object> profileEntry : profileSets) {
+                    
                     //  TODO: Refactor this if into something more streamlined:
                     if (profileEntry.getKey().equals("ID") || profileEntry.getKey().equals("Active Profile"))
                         continue;
@@ -588,7 +711,7 @@ public class ProfileManager {
                 
                 System.out.println("\n        Profiles:");
                 for (Profile profile : character.getProfiles()) {
-                    System.out.println("            " + profile.name);
+                    System.out.println("            " + profile.getName());
                     //  TODO: print out profile backups
                     
                 }  // iterate through profiles
@@ -605,6 +728,7 @@ public class ProfileManager {
         identifyAllCharacters();
         
         activeCharacter = getCharacter(activeCharacterName);
+        activeCharacterID = activeCharacter.getId();
         
         return true;
     }  //  end method loadConfig()
@@ -613,6 +737,8 @@ public class ProfileManager {
     
     /**
      * <p>TODO:  For now, this will simply overwrite the files in the current directory with whichever one(s) are in the backup being loaded.</p>
+     * 
+     * <p>TODO:  Implement way for this to return false whenever user attempts to load the active profile (or prevent this somewhere else, altogether).</p>
      * 
      * Initiates profile load procedure by backing up the active profile, and
      * then calling the <code>loadProfile()</code> method on the
@@ -716,8 +842,6 @@ public class ProfileManager {
     
     
     /**
-     * TODO:  Build this!
-     * 
      * <p>Searches through the FFXIV folder, identified by
      * <code>FFXIV_FOLDER</code>, and creates a <code>characters</code> object
      * for each folder it finds.</p>
@@ -951,5 +1075,11 @@ public class ProfileManager {
         }
         
     }  //  end class UnidentifiedCharactersFrame
+
+    private static class FileMismatchException extends Exception {
+
+        public FileMismatchException() {
+        }
+    }
     
 }  //  end class ProfileManager

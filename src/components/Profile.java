@@ -1,12 +1,16 @@
 /**
  * changelog:
  * 2016-02-01 : Refactored.
+ * 
+ * 2016-02-05 : Added name, backups, and lastBackup fields.
+ * 2016-02-05 : Added getName() and getLastBacku() methods.
  */
 
 package components;
 
 
 import java.util.ArrayList;
+import util.Backup;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -19,11 +23,13 @@ import java.util.ArrayList;
  * @author Alan Johnson
  */
 public class Profile implements Component {
-    public  String name;
+    private  String name;
     private String characterName;
     private String characterID;
     private String directory;
     
+    private ArrayList <Backup> backups;
+    private Backup lastBackup;
     private ArrayList <String> tags;
     private Gearset gearset;
     private HotbarLayout hotbarLayout;
@@ -46,6 +52,8 @@ public class Profile implements Component {
         characterName = cName;
         characterID = cID;
         directory = dir + cID;
+        backups = new ArrayList<>();
+        tags = new ArrayList<>();
         
         loadProfileData();
     }
@@ -65,9 +73,24 @@ public class Profile implements Component {
         characterName = cName;
         characterID = cID;
         directory = dir + cID;
+        backups = new ArrayList<>();
+        tags = new ArrayList<>();
         
         loadProfileData();
     }
+    
+    
+    
+    public Backup getLastBackup() {
+        return lastBackup;
+    }
+    
+    
+    
+    public String getName() {
+        return name;
+    }
+
     
     private boolean loadProfileData () {
         gearset      = new Gearset     (characterID, directory);
@@ -80,5 +103,5 @@ public class Profile implements Component {
     @Override
     public ArrayList <String> getTags () {
         return tags;
-    }
+    } 
 }
