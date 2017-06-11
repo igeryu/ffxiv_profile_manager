@@ -1,4 +1,6 @@
+**/.DS_Store
 /build/
+/target/
 config.dat
 data.json
 jsontest.txt

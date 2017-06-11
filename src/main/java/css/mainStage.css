@@ -1,0 +1,75 @@
+.pane {
+    -fx-border-color: #2e8b57;
+    -fx-border-width: 2px;
+    -fx-padding: 10;
+    -fx-spacing: 8;
+}
+
+.schedule {
+    -fx-background-color: #D9E4F1;
+    -fx-border-color: #D9E4F1;
+}
+
+.manage {
+    -fx-background-color: #C7E3A0;
+    -fx-border-color: #C7E3A0;
+}
+
+.file {
+    -fx-background-color: #F8A613;
+}
+
+#schedule_table .table-column {
+    -fx-alignment: CENTER;
+}
+.midshift {
+    /* -fx-text-fill: */
+    -fx-background-color:orangered;
+}
+
+.table-row-cell midshift:selected .text {
+    -fx-fill:fuchsia;
+}
+
+.dayshift {
+    /* -fx-text-fill: */
+    -fx-background-color:lightblue;
+}
+
+.swingshift {
+    /* -fx-text-fill: */
+    -fx-background-color:springgreen;
+}
+
+.noshift {
+    /* -fx-text-fill: */
+   -fx-background-color:white;
+}
+
+/*#mid_style {
+     -fx-text-fill: 
+    -fx-background-color:orangered;
+}
+
+#day_style {
+     -fx-text-fill: 
+    -fx-background-color:lightblue;
+}
+
+#swing_style {
+     -fx-text-fill: 
+    -fx-background-color:springgreen;
+}
+
+#no_style {
+     -fx-text-fill: 
+    -fx-background-color:white;
+}*/
+
+.table-row-cell:selected .text {
+    -fx-fill:mediumblue;
+}
+
+.separator .line {
+    -fx-background: #DDDDDD;
+}
