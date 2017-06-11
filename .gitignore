@@ -1,4 +1,5 @@
 /build/
+/target/
 config.dat
 data.json
 jsontest.txt
