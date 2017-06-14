@@ -5,6 +5,7 @@ config.dat
 data.json
 jsontest.txt
 jsontest_old.txt
+nb-configuration.xml
 test.xlsx
 ~$alysis.docx
 ~$quirements.docx
